@@ -1,0 +1,42 @@
+{
+  "vision_intrusion_alert": {
+    "events": ["intrusion_detected"],
+    "time_window": 10,
+    "description": "Intrusion behavior detected from CCTV model"
+  },
+  "violent_incident": {
+    "events": ["fight_detected"],
+    "time_window": 10,
+    "description": "Physical altercation detected from CCTV model"
+  },
+  "intrusion_attempt": {
+    "events": ["person_detected", "access_denied"],
+    "time_window": 60,
+    "description": "Possible unauthorized entry attempt"
+  },
+  "unauthorized_access": {
+    "events": ["restricted_area_entry"],
+    "time_window": 60,
+    "description": "Person entered restricted area"
+  },
+  "loitering": {
+    "events": ["loitering_detected"],
+    "time_window": 60,
+    "description": "Person loitering in monitored area"
+  },
+  "emergency_distress": {
+    "events": ["panic_button"],
+    "time_window": 10,
+    "description": "Emergency panic alert triggered"
+  },
+  "fire_alert": {
+    "events": ["smoke_detected"],
+    "time_window": 30,
+    "description": "Possible fire detected"
+  },
+  "forced_entry": {
+    "events": ["door_forced_open"],
+    "time_window": 30,
+    "description": "Door forced open"
+  }
+}
