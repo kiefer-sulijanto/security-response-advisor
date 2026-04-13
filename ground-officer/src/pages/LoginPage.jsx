@@ -3,7 +3,7 @@ import { SHIFTS } from '../constants/mockData.js'
 
 async function fetchOfficers() {
   try {
-    const res = await fetch('http://localhost:4000/api/officers')
+    const res = await fetch('http://localhost:8000/api/officers')
     if (!res.ok) return []
     return await res.json()
   } catch { return [] }

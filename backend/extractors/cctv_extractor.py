@@ -129,12 +129,6 @@ class CCTVExtractor:
                     detections.append(detection)
                     person_count += 1
 
-                    print("\n=== YOLO PERSON DEBUG ===")
-                    print(f"label=person conf={confidence:.4f}")
-                    print(f"bbox={[round(x1, 1), round(y1, 1), round(x2, 1), round(y2, 1)]}")
-                    print(f"center=({cx:.1f}, {cy:.1f}) restricted={in_restricted_area}")
-                    print("=========================\n")
-
                 except (AttributeError, TypeError, ValueError, IndexError, KeyError):
                     continue
 

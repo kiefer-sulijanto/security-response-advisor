@@ -6,6 +6,7 @@ from typing import Any
 
 from adapters.access_log_adapter import process_access_log
 from adapters.cctv_adapter import process_cctv_detection
+from adapters.manual_event_adapter import process_manual_event
 from core.event_stream_processor import EventStreamProcessor
 from core.incident_engine import IncidentEngine
 from extractors.cctv_extractor import CCTVExtractor
@@ -37,6 +38,7 @@ class PipelineService:
             "distance_threshold": 80.0,
             "dwell_seconds": 60,
             "cooldown_seconds": 30,
+            "exit_grace_seconds": 5,
         }
         self.zone_presence_state: dict[tuple[str, str], dict] = {}
         self.zone_presence_config = {
@@ -86,12 +88,12 @@ class PipelineService:
         return (dx * dx + dy * dy) ** 0.5
 
     def _build_multiple_persons_detections(
-    self,
-    detections: list[dict],
-    camera_id: str,
-    location: str,
-    timestamp_override: str | None = None,
-) -> list[dict]:
+        self,
+        detections: list[dict],
+        camera_id: str,
+        location: str,
+        timestamp_override: str | None = None,
+    ) -> list[dict]:
         timestamp = self._parse_timestamp(timestamp_override) or datetime.now()
         key = (camera_id, location)
 
@@ -225,6 +227,12 @@ class PipelineService:
         state = self.loitering_state.get(key)
 
         if not person_detections:
+            if state is not None:
+                last_seen = state.get("last_seen")
+                if last_seen is not None:
+                    elapsed = (timestamp - last_seen).total_seconds()
+                    if elapsed >= self.loitering_config["exit_grace_seconds"]:
+                        self.loitering_state.pop(key, None)
             return []
 
         current_center = person_detections[0].get("center")
@@ -248,6 +256,7 @@ class PipelineService:
             state["last_seen"] = timestamp
             state["last_center"] = current_center
             state["last_emission"] = None
+            self.loitering_state[key] = state
             return []
 
         dwell_time = (state["last_seen"] - state["first_seen"]).total_seconds()
@@ -378,6 +387,22 @@ class PipelineService:
 
         return {"results": all_results, "debug": {}}
 
+    def process_manual_input(self, raw_input: dict) -> list[dict]:
+        if not isinstance(raw_input, dict):
+            return [
+                self._pipeline_error(
+                    "manual_input_processing_failed",
+                    "raw_input must be a dict",
+                )
+            ]
+
+        try:
+            events = process_manual_event(raw_input)
+        except (AttributeError, TypeError, ValueError) as e:
+            return [self._pipeline_error("manual_input_processing_failed", str(e))]
+
+        return self.process_events(events, source_type="manual_event")
+    
     def process_cctv_input(self, raw_detection: dict) -> list[dict]:
         if not isinstance(raw_detection, dict):
             return [
@@ -589,3 +614,18 @@ class PipelineService:
             return datetime.fromisoformat(value)
         except (TypeError, ValueError):
             return None
+        
+    def reset_state(self) -> None:
+        # Clear buffered events
+        if hasattr(self.processor, "events"):
+            self.processor.events.clear()
+
+        # Clear incident engine memory
+        self.engine.recent_incidents.clear()
+        self.engine.used_event_keys.clear()
+
+        # Clear pipeline tracking state
+        self.loitering_state.clear()
+        self.zone_presence_state.clear()
+        self.multiple_persons_state.clear()
+    

@@ -9,6 +9,8 @@ import { IncidentsPage }      from "./pages/IncidentsPage";
 import { ResultsPage }        from "./pages/ResultsPage";
 import { GroundOfficersPage } from "./pages/GroundOfficersPage";
 import { ShiftReportPage }    from "./pages/ShiftReportPage";
+import { CAMERA_CONFIG } from "./config/cameras";
+import { CameraProcessor } from "./components/CameraProcessor";
 
 export default function App() {
   const [page, setPage]                       = useState("dashboard");
@@ -118,8 +120,19 @@ export default function App() {
         </div>
       )}
 
-      <Sidebar active={page === "results" ? "upload" : page} onNav={setPage} incidentCount={activeIncidents} />
+            <div style={{ display: "none" }}>
+        {CAMERA_CONFIG.map((cam) => (
+          <CameraProcessor key={`processor-${cam.id}`} cam={cam} />
+        ))}
+      </div>
+
+      <Sidebar
+        active={page === "results" ? "upload" : page}
+        onNav={setPage}
+        incidentCount={activeIncidents}
+      />
       {renderPage()}
     </div>
+    
   );
 }

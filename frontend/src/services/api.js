@@ -44,4 +44,7 @@ export const api = {
 
   // GO reports
   getReports:        () => req("GET", "/reports"),
+
+  // Demo Reset
+  resetDemoState: () => req("POST", "/demo/reset"),
 };

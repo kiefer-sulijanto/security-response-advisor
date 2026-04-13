@@ -20,8 +20,8 @@
 // ╚══════════════════════════════════════════════════════════════════════════╝
 export const CAMERA_CONFIG = [
   {
-    id: "cam_sim_01",
-    name: "Laptop Webcam",
+    id: "cam_01",
+    name: "Phone Camera",
     location: "server_room",
     source: "device",
     deviceIndex: 0,
@@ -29,8 +29,8 @@ export const CAMERA_CONFIG = [
     processingIntervalMs: 2000,
   },
   {
-    id: "cam_phone_01",
-    name: "Phone Camera",
+    id: "cam_02",
+    name: "Laptop Webcam",
     location: "lobby",
     source: "device",
     deviceIndex: 1,

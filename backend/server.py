@@ -4,6 +4,8 @@ import uuid
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional
+import copy
+import os
 
 import cv2
 import numpy as np
@@ -22,12 +24,20 @@ load_dotenv()
 
 app = FastAPI(title="Certis Security Management API")
 
+frontend_origins = [
+    origin.strip()
+    for origin in os.getenv("FRONTEND_ORIGINS", "").split(",")
+    if origin.strip()
+] or [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:5174",
+    "http://127.0.0.1:5174",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-    ],
+    allow_origins=frontend_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -43,6 +53,8 @@ officers_db: list[dict] = [
     {"id": "go3", "name": "Mike Chen",  "badge": "SO-1156", "status": "standby", "location": "Basement B1",     "task": None},
     {"id": "go4", "name": "Amy Koh",    "badge": "SO-3042", "status": "standby", "location": "Perimeter Gate",  "task": None},
 ]
+
+INITIAL_OFFICERS_DB = copy.deepcopy(officers_db)
 
 incidents_db: list[dict] = []
 dispatches_db: list[dict] = []
@@ -60,7 +72,7 @@ pipeline = PipelineService(window_seconds=120, enable_advisory=True)
 
 CAMERA_REGISTRY = [
     {
-        "camera_id": "cam_sim_01",
+        "camera_id": "cam_01",
         "model_path": "models/yolov8n.pt",
         "location": "server_room",
         "conf_threshold": 0.7,
@@ -69,12 +81,12 @@ CAMERA_REGISTRY = [
         }
     },
     {
-        "camera_id": "cam_phone_01",
+        "camera_id": "cam_02",
         "model_path": "models/yolov8n.pt",
         "location": "lobby",
         "conf_threshold": 0.7,
         "restricted_zones": {
-            "cam_phone_01": [[(0, 0), (640, 0), (640, 480), (0, 480)]]
+            "cam_phone_01": []
         }
     }
 ]
@@ -173,6 +185,13 @@ class AccessLogRequest(BaseModel):
     door_id: Optional[str] = None
     timestamp: Optional[str] = None
 
+class ManualEventRequest(BaseModel):
+    event_type: str
+    location: str
+    timestamp: Optional[str] = None
+    source: str = "manual_trigger"
+    metadata: Optional[dict] = None
+
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -201,9 +220,17 @@ def _decode_base64_image(image_base64: str):
 
     return frame
 
+def _parse_iso_timestamp(value: str | None) -> datetime | None:
+    if not value:
+        return None
+    try:
+        return datetime.fromisoformat(value)
+    except (TypeError, ValueError):
+        return None
 
 def _persist_pipeline_results(results: list[dict], source_name: str) -> int:
     created_count = 0
+    duplicate_cooldown_seconds = 30
 
     for result in results:
         if result.get("is_system_error"):
@@ -212,13 +239,42 @@ def _persist_pipeline_results(results: list[dict], source_name: str) -> int:
         advisory = result.get("advisory", {})
         incident_data = result.get("incident_data", {})
 
-        if not incident_data.get("name"):
+        incident_name = incident_data.get("name")
+        incident_location = incident_data.get("location", "unknown")
+        incident_timestamp_str = incident_data.get("timestamp") or datetime.now().isoformat()
+
+        if not incident_name:
+            continue
+
+        incident_timestamp = _parse_iso_timestamp(incident_timestamp_str) or datetime.now()
+
+        is_duplicate = False
+        for existing in reversed(incidents_db):
+            if existing.get("incidentType") != incident_name:
+                continue
+            if existing.get("location") != incident_location:
+                continue
+
+            existing_ts = _parse_iso_timestamp(existing.get("createdAt"))
+            if existing_ts is None:
+                continue
+
+            age_seconds = abs((incident_timestamp - existing_ts).total_seconds())
+            if age_seconds <= duplicate_cooldown_seconds:
+                is_duplicate = True
+                break
+
+            # Since we scan newest first, we can stop once records are clearly older
+            if existing_ts < incident_timestamp - timedelta(seconds=duplicate_cooldown_seconds):
+                break
+
+        if is_duplicate:
             continue
 
         incident = {
             "id": str(uuid.uuid4()),
-            "incidentType": incident_data.get("name", "unknown"),
-            "location": incident_data.get("location", "unknown"),
+            "incidentType": incident_name,
+            "location": incident_location,
             "source": source_name,
             "description": incident_data.get("description", ""),
             "flag": _normalize_flag(advisory.get("flag", "green")),
@@ -229,7 +285,7 @@ def _persist_pipeline_results(results: list[dict], source_name: str) -> int:
             "aiDetails": advisory,
             "status": "open",
             "assignedTo": None,
-            "createdAt": incident_data.get("timestamp") or datetime.now().isoformat(),
+            "createdAt": incident_timestamp.isoformat(),
         }
 
         incidents_db.append(incident)
@@ -338,6 +394,7 @@ def update_incident(incident_id: str, req: UpdateIncidentRequest):
 @app.get("/api/officers")
 def get_officers():
     return officers_db
+
 
 
 @app.patch("/api/officers/{officer_id}")
@@ -533,3 +590,43 @@ def pipeline_events():
 @app.get("/api/pipeline/cameras")
 def pipeline_cameras():
     return {"camera_ids": pipeline.list_registered_cameras()}
+
+    
+@app.post("/api/pipeline/manual-event")
+def pipeline_manual_event(req: ManualEventRequest):
+    raw_input = {
+        "event_type": req.event_type,
+        "location": req.location,
+        "timestamp": req.timestamp,
+        "source": req.source,
+        "metadata": req.metadata,
+    }
+
+    results = pipeline.process_manual_input(raw_input)
+    created = _persist_pipeline_results(results, "Manual Trigger")
+
+    return {
+        "results": results,
+        "incidents_created": created,
+    }
+
+# ---------------------------------------------------------------------------
+# /api/demo/reset
+# ---------------------------------------------------------------------------
+
+
+@app.post("/api/demo/reset")
+def reset_demo_state():
+    incidents_db.clear()
+    dispatches_db.clear()
+    reports_db.clear()
+
+    officers_db.clear()
+    officers_db.extend(copy.deepcopy(INITIAL_OFFICERS_DB))
+
+    pipeline.reset_state()
+
+    return {
+        "status": "ok",
+        "message": "Demo state cleared successfully",
+    }

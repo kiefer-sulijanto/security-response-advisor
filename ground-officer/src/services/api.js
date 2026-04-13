@@ -1,4 +1,4 @@
-const BASE = "http://localhost:4000/api";
+const BASE = "http://localhost:8000/api";
 
 async function req(method, path, body) {
   const res = await fetch(`${BASE}${path}`, {
@@ -26,4 +26,7 @@ export const api = {
 
   // Field reports — GO → backend → CC
   createReport: (data) => req("POST", "/reports", data),
+
+  // Reset demo state
+  resetDemoState: () => req("POST", "/demo/reset"),
 };

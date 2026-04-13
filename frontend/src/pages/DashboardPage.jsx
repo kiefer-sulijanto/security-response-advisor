@@ -3,6 +3,7 @@ import { CAMERA_CONFIG } from "../config/cameras";
 import { TopBar } from "../components/TopBar";
 import { CameraFeed } from "../components/CameraFeed";
 import { StatCard, EmptyState, Badge } from "../components/ui";
+import { api } from "../services/api";
 
 const GO_STATUS_META = {
   responding: { color: "#e24b4a", label: "Responding" },
@@ -11,9 +12,26 @@ const GO_STATUS_META = {
   off_duty:   { color: "#555960", label: "Off Duty"   },
 };
 
+
+
 export function DashboardPage({ onNav, analyses, incidents, groundOfficers = [], dispatches = [] }) {
   const criticalCount = analyses.filter(a => a.result?.segments?.some(s => s.color === C.red)).length;
   const warningCount  = analyses.filter(a => a.result?.segments?.some(s => s.color === C.amber)).length;
+
+  async function handleResetDemo() {
+    const confirmed = window.confirm(
+      "Reset all demo incidents, dispatches, reports, officers, and pipeline state?"
+    );
+
+    if (!confirmed) return;
+
+    try {
+      await api.resetDemoState();
+      window.location.reload();
+    } catch (err) {
+      alert(`Reset failed: ${err.message}`);
+    }
+  }
 
   return (
     <div style={{ flex: 1, overflow: "auto", background: C.bg, fontFamily: font }}>
@@ -32,9 +50,42 @@ export function DashboardPage({ onNav, analyses, incidents, groundOfficers = [],
         {/* Camera preview strip */}
         <div style={card({ padding: 20 })}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-            <p style={{ fontSize: 14, fontWeight: 700, color: C.textPrimary, margin: 0 }}>Live Cameras</p>
-            <button onClick={() => onNav("cameras")} style={{ background: "transparent", border: "none",
-              color: C.green, fontSize: 12, fontWeight: 600, cursor: "pointer", padding: 0 }}>View all →</button>
+            <p style={{ fontSize: 14, fontWeight: 700, color: C.textPrimary, margin: 0 }}>
+              Live Cameras
+            </p>
+
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <button
+                onClick={handleResetDemo}
+                style={{
+                  background: "transparent",
+                  border: `1px solid ${C.border}`,
+                  color: C.textSecondary,
+                  fontSize: 12,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  padding: "8px 12px",
+                  borderRadius: 8,
+                }}
+              >
+                Reset Demo State
+              </button>
+
+              <button
+                onClick={() => onNav("cameras")}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  color: C.green,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  padding: 0,
+                }}
+              >
+                View all →
+              </button>
+            </div>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10 }}>
             {CAMERA_CONFIG.map(cam => (

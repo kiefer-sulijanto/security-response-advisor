@@ -1,22 +1,16 @@
 import { useState, useRef, useEffect } from "react";
 import { C, card } from "../constants/colors";
 import { Spinner } from "./ui";
-import { api } from "../services/api";
 
 export function CameraFeed({ cam }) {
   const videoRef = useRef(null);
-  const canvasRef = useRef(null);
-  const processingRef = useRef(false);
 
   const [camStatus, setCamStatus] = useState("connecting");
   const [errorMsg, setErrorMsg] = useState("");
-  const [lastProcessedAt, setLastProcessedAt] = useState(null);
-  const [lastProcessingMsg, setLastProcessingMsg] = useState("Waiting...");
-  const [incidentsCreated, setIncidentsCreated] = useState(0);
 
   useEffect(() => {
     let stream = null;
-    let processingTimer = null;
+    let stopped = false;
 
     async function connect() {
       setCamStatus("connecting");
@@ -33,19 +27,14 @@ export function CameraFeed({ cam }) {
             audio: false,
           });
 
+          if (stopped) return;
+
           if (videoRef.current) {
             videoRef.current.srcObject = stream;
-            console.log(cam.id, {
-              labelHint: cam.deviceLabelHint,
-              videoWidth: videoRef.current?.videoWidth,
-              videoHeight: videoRef.current?.videoHeight,
-              readyState: videoRef.current?.readyState,
-            });
             await videoRef.current.play().catch(() => {});
           }
 
           setCamStatus("live");
-          startFrameProcessing();
         } catch (err) {
           setCamStatus("error");
           setErrorMsg(
@@ -67,8 +56,7 @@ export function CameraFeed({ cam }) {
           videoRef.current
             .play()
             .then(() => {
-              setCamStatus("live");
-              startFrameProcessing();
+              if (!stopped) setCamStatus("live");
             })
             .catch(() => {
               setCamStatus("error");
@@ -78,63 +66,10 @@ export function CameraFeed({ cam }) {
       }
     }
 
-    function startFrameProcessing() {
-      const intervalMs = cam.processingIntervalMs || 2000;
-
-      processingTimer = setInterval(async () => {
-        if (!videoRef.current || !canvasRef.current) return;
-        if (processingRef.current) return;
-        if (videoRef.current.readyState < 2) return;
-
-        const video = videoRef.current;
-        const canvas = canvasRef.current;
-        const ctx = canvas.getContext("2d");
-
-        if (!ctx || !video.videoWidth || !video.videoHeight) return;
-
-        try {
-          processingRef.current = true;
-
-          const targetWidth = 640;
-          const scale = targetWidth / video.videoWidth;
-          const targetHeight = Math.max(1, Math.round(video.videoHeight * scale));
-
-          canvas.width = targetWidth;
-          canvas.height = targetHeight;
-
-          ctx.drawImage(video, 0, 0, targetWidth, targetHeight);
-
-          const imageBase64 = canvas.toDataURL("image/jpeg", 0.7);
-
-          const response = await api.processCctvFrame({
-            image_base64: imageBase64,
-            camera_id: cam.id,
-            location: cam.location,
-            confidence_threshold: 0.5,
-            include_debug: true,
-          });
-
-          setLastProcessedAt(new Date());
-          setIncidentsCreated(response.incidents_created || 0);
-
-          const directCount = response.debug?.direct_detection_count ?? 0;
-          setLastProcessingMsg(
-            response.incidents_created > 0
-              ? `${response.incidents_created} incident(s) created`
-              : `${directCount} detection(s), no incidents`
-          );
-        } catch (err) {
-          setLastProcessingMsg(`Processing failed: ${err.message}`);
-        } finally {
-          processingRef.current = false;
-        }
-      }, intervalMs);
-    }
-
     connect();
 
     return () => {
-      if (processingTimer) clearInterval(processingTimer);
+      stopped = true;
 
       if (stream) {
         stream.getTracks().forEach((t) => t.stop());
@@ -191,8 +126,6 @@ export function CameraFeed({ cam }) {
             display: camStatus === "live" ? "block" : "none",
           }}
         />
-
-        <canvas ref={canvasRef} style={{ display: "none" }} />
 
         {camStatus !== "live" && (
           <div
@@ -325,21 +258,6 @@ export function CameraFeed({ cam }) {
             {statusLabel}
           </span>
         </div>
-
-        <div style={{ fontSize: 11, color: C.textSecondary }}>
-          Backend: {lastProcessingMsg}
-        </div>
-
-        <div style={{ fontSize: 11, color: C.textMuted }}>
-          Last processed:{" "}
-          {lastProcessedAt ? lastProcessedAt.toLocaleTimeString() : "Not yet"}
-        </div>
-
-        {incidentsCreated > 0 && (
-          <div style={{ fontSize: 11, color: C.red, fontWeight: 700 }}>
-            Incidents created: {incidentsCreated}
-          </div>
-        )}
       </div>
     </div>
   );

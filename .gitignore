@@ -6,7 +6,6 @@ Thumbs.db
 *.swp
 *.swo
 
-.git/
 
 
 logs/
@@ -22,6 +21,13 @@ lerna-debug.log*
 .env.*
 !.env.example
 *.local
+
+frontend/.env
+frontend/.env.*
+ground-officer/.env
+ground-officer/.env.*
+demo-trigger/.env
+demo-trigger/.env.*
 
 
 __pycache__/
@@ -63,12 +69,10 @@ coverage/
 *.orig
 *.rej
 
-# Generated media or local test assets
-# Uncomment these if you do NOT want sample test media in Git
-# backend/tests/*.mp4
-# backend/tests/*.jpg
-# backend/tests/*.jpeg
-# backend/tests/*.png
+demo-trigger/node_modules/
+demo-trigger/dist/
+demo-trigger/.vite/
+demo-trigger/.vite-temp/
 
 
 backend/.env
