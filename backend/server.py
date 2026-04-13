@@ -1,7 +1,7 @@
 import base64
 import sys
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional
 
@@ -24,7 +24,10 @@ app = FastAPI(title="Certis Security Management API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -51,22 +54,40 @@ reports_db: list[dict] = []
 
 pipeline = PipelineService(window_seconds=120, enable_advisory=True)
 
-# Register cameras here. Add more as needed.
-# Update model_path to your real model location.
-pipeline.register_camera(
-    camera_id="cam_sim_01",
-    model_path="models/best.pt",
-    location="server_room",
-    conf_threshold=0.6,
-)
+# ---------------------------------------------------------------------------
+# Camera configuration
+# ---------------------------------------------------------------------------
 
-# Example additional camera
-# pipeline.register_camera(
-#     camera_id="cam_lobby_01",
-#     model_path="models/best.pt",
-#     location="lobby",
-#     conf_threshold=0.6,
-# )
+CAMERA_REGISTRY = [
+    {
+        "camera_id": "cam_sim_01",
+        "model_path": "models/yolov8n.pt",
+        "location": "server_room",
+        "conf_threshold": 0.7,
+        "restricted_zones": {
+            "cam_sim_01": []
+        }
+    },
+    {
+        "camera_id": "cam_phone_01",
+        "model_path": "models/yolov8n.pt",
+        "location": "lobby",
+        "conf_threshold": 0.7,
+        "restricted_zones": {
+            "cam_phone_01": [[(0, 0), (640, 0), (640, 480), (0, 480)]]
+        }
+    }
+]
+    
+
+for cam in CAMERA_REGISTRY:
+    pipeline.register_camera(
+        camera_id=cam["camera_id"],
+        model_path=cam["model_path"],
+        location=cam["location"],
+        conf_threshold=cam["conf_threshold"],
+        restricted_zones=cam["restricted_zones"],
+    )
 
 # ---------------------------------------------------------------------------
 # Pydantic request models
@@ -140,6 +161,9 @@ class CCTVFrameRequest(BaseModel):
     camera_id: str
     location: Optional[str] = None
     confidence_threshold: Optional[float] = None
+    frame_timestamp_seconds: Optional[float] = None
+    timestamp: Optional[str] = None
+    include_debug: bool = False
 
 
 class AccessLogRequest(BaseModel):
@@ -457,18 +481,28 @@ def pipeline_cctv_frame(req: CCTVFrameRequest):
     except (ValueError, TypeError, base64.binascii.Error) as e:
         raise HTTPException(status_code=400, detail=f"Invalid frame payload: {str(e)}")
 
-    results = pipeline.process_cctv_frame(
+    timestamp_override = req.timestamp
+    if not timestamp_override and req.frame_timestamp_seconds is not None:
+        timestamp_override = (
+            datetime.now() + timedelta(seconds=req.frame_timestamp_seconds)
+        ).isoformat(timespec="seconds")
+
+    pipeline_output = pipeline.process_cctv_frame(
         frame=frame,
         camera_id=req.camera_id,
         override_location=req.location,
         conf_threshold=req.confidence_threshold,
+        timestamp_override=timestamp_override,
+        include_debug=req.include_debug,
     )
 
+    results = pipeline_output.get("results", [])
     created = _persist_pipeline_results(results, "CCTV Frame Pipeline")
 
     return {
         "results": results,
         "incidents_created": created,
+        "debug": pipeline_output.get("debug", {}),
     }
 
 

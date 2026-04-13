@@ -132,10 +132,11 @@ export async function runPipelineMultiFrameAnalysis(frames, meta = {}) {
       camera_id: meta.camera_id || "cam_sim_01",
       location: meta.location || "server_room",
       confidence_threshold: meta.confidence_threshold ?? 0.45,
-      frame_timestamp_seconds: timestamp,
+      frame_timestamp_seconds: timestamp, 
     });
 
     responses.push(normalizeFrameResult(response, { timestamp }));
+    
   }
 
   return aggregateFrameResults(responses);

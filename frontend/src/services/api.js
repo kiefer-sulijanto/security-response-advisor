@@ -1,4 +1,4 @@
-const BASE = "http://127.0.0.1:8000/api";
+const BASE = "http://localhost:8000/api";
 
 async function req(method, path, body) {
   const res = await fetch(`${BASE}${path}`, {

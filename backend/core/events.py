@@ -34,6 +34,8 @@ class EventType:
     RESTRICTED_AREA_ENTRY = "restricted_area_entry"
     INTRUSION_DETECTED = "intrusion_detected"
     FIGHT_DETECTED = "fight_detected"
+    AFTER_HOURS_PRESENCE = "after_hours_presence"
+    MULTIPLE_PERSONS_DETECTED = "multiple_persons_detected"
 
 
 def create_event(

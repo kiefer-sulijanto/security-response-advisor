@@ -38,5 +38,41 @@
     "events": ["door_forced_open"],
     "time_window": 30,
     "description": "Door forced open"
+  },
+
+  "confirmed_intrusion": {
+    "events": ["restricted_area_entry", "access_denied"],
+    "time_window": 60,
+    "description": "Restricted area entry associated with denied access"
+  },
+  "vision_backed_intrusion_attempt": {
+    "events": ["intrusion_detected", "access_denied"],
+    "time_window": 30,
+    "description": "Visual intrusion signal supported by denied access event"
+  },
+  "escalated_unauthorized_access": {
+    "events": ["intrusion_detected", "restricted_area_entry"],
+    "time_window": 20,
+    "description": "Visual intrusion signal supported by restricted area entry"
+  },
+  "critical_security_breach": {
+    "events": ["door_forced_open", "restricted_area_entry"],
+    "time_window": 30,
+    "description": "Forced entry followed by presence in restricted area"
+  },
+  "camera_tampering": {
+    "events": ["camera_obstructed"],
+    "time_window": 20,
+    "description": "Possible CCTV obstruction or tampering detected"
+  },
+  "unattended_object_alert": {
+    "events": ["object_left_behind", "loitering_detected"],
+    "time_window": 120,
+    "description": "Possible unattended object left in monitored area"
+  },
+  "suspicious_after_hours_presence": {
+  "events": ["person_detected", "after_hours_presence"],
+  "time_window": 60,
+  "description": "Person detected in monitored area during restricted hours"
   }
 }

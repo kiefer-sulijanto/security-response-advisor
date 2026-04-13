@@ -229,11 +229,11 @@ class IncidentEngine:
     def _build_incident_signature(self, incident_name, matching_events):
         try:
             location = getattr(matching_events[0], "location", "unknown")
-            event_types = tuple(
-                sorted(getattr(event, "event_type", "unknown") for event in matching_events)
+            event_signature = tuple(
+                sorted(self._event_key(event) for event in matching_events)
             )
-            return (incident_name, location, event_types)
-        except (AttributeError, TypeError):
+            return (incident_name, location, event_signature)
+        except (AttributeError, TypeError, ValueError):
             return (incident_name, "unknown", ())
 
     def _is_duplicate(self, signature, incident_time):

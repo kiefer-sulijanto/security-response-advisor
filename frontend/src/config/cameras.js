@@ -19,12 +19,24 @@
 // ║  Set streamUrl to your proxy's HTTP output URL.                         ║
 // ╚══════════════════════════════════════════════════════════════════════════╝
 export const CAMERA_CONFIG = [
-  { id: "CAM-01", name: "Cam 1", location: "Main Entrance",  source: "device", deviceIndex: 0, streamUrl: "" },
-  { id: "CAM-02", name: "Cam 2", location: "Corridor B-2",   source: "stream", deviceIndex: 1, streamUrl: "" },
-  { id: "CAM-03", name: "Cam 3", location: "Parking Lot",    source: "stream", deviceIndex: 2, streamUrl: "" },
-  { id: "CAM-04", name: "Cam 4", location: "Server Room",    source: "stream", deviceIndex: 3, streamUrl: "" },
-  { id: "CAM-05", name: "Cam 5", location: "Lobby East",     source: "stream", deviceIndex: 4, streamUrl: "" },
-  { id: "CAM-06", name: "Cam 6", location: "Stairwell A",    source: "stream", deviceIndex: 5, streamUrl: "" },
+  {
+    id: "cam_sim_01",
+    name: "Laptop Webcam",
+    location: "server_room",
+    source: "device",
+    deviceIndex: 0,
+    streamUrl: "",
+    processingIntervalMs: 2000,
+  },
+  {
+    id: "cam_phone_01",
+    name: "Phone Camera",
+    location: "lobby",
+    source: "device",
+    deviceIndex: 1,
+    streamUrl: "",
+    processingIntervalMs: 2000,
+  }
 ];
 
 export const NAV = [

@@ -6,6 +6,14 @@ LABEL_TO_EVENTS = {
     "person": [EventType.PERSON_DETECTED],
     "intrusion_or_unauthorized": [EventType.INTRUSION_DETECTED],
     "fighting_or_aggressive": [EventType.FIGHT_DETECTED],
+    "multiple_persons": [EventType.MULTIPLE_PERSONS_DETECTED],
+    "loitering": [EventType.LOITERING_DETECTED],
+}
+
+LOCATION_ALLOWED_HOURS = {
+    "server_room": {"start": 8, "end": 18},
+    "lobby": {"start": 6, "end": 22},
+    "warehouse": {"start": 7, "end": 20},
 }
 
 
@@ -20,6 +28,9 @@ def process_cctv_detection(detection: dict) -> list:
         confidence = _safe_float(detection.get("confidence", 1.0), default=1.0)
         camera_id = detection.get("camera_id")
         raw_restricted = detection.get("in_restricted_area", False)
+        bbox = detection.get("bbox")
+        center = detection.get("center")
+        person_count = detection.get("person_count")
 
         if isinstance(raw_restricted, str):
             in_restricted_area = raw_restricted.strip().lower() in {"true", "1", "yes"}
@@ -30,7 +41,10 @@ def process_cctv_detection(detection: dict) -> list:
 
     metadata = {
         "camera_id": camera_id,
-        "raw_label": label
+        "raw_label": label,
+        "bbox": bbox,
+        "center": center,
+        "person_count": person_count,
     }
 
     events = []
@@ -44,7 +58,7 @@ def process_cctv_detection(detection: dict) -> list:
                     source="cctv",
                     confidence=confidence,
                     timestamp=timestamp,
-                    metadata=metadata
+                    metadata=metadata,
                 )
             )
 
@@ -56,13 +70,38 @@ def process_cctv_detection(detection: dict) -> list:
                     source="cctv",
                     confidence=confidence,
                     timestamp=timestamp,
-                    metadata=metadata
+                    metadata=metadata,
                 )
             )
+
+        if label == "person" and _is_after_hours(location, timestamp):
+            events.append(
+                create_event(
+                    event_type=EventType.AFTER_HOURS_PRESENCE,
+                    location=location,
+                    source="cctv",
+                    confidence=confidence,
+                    timestamp=timestamp,
+                    metadata=metadata,
+                )
+            )
+
     except (TypeError, ValueError):
         return []
 
     return events
+
+
+def _is_after_hours(location: str, timestamp: datetime) -> bool:
+    hours = LOCATION_ALLOWED_HOURS.get(location)
+    if not hours:
+        return False
+
+    start = int(hours["start"])
+    end = int(hours["end"])
+    hour = timestamp.hour
+
+    return hour < start or hour >= end
 
 
 def _parse_timestamp(value):
