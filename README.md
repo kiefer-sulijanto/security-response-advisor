@@ -49,13 +49,13 @@ Rule-based correlation engine that fuses multiple signals into structured incide
 
 | Incident | Trigger | Time Window |
 |----------|---------|-------------|
-| `intrusion_attempt` | Person detected + access denied | 60s |
-| `unauthorized_access` | Person in restricted zone | 60s |
-| `after_hours_presence` | Person outside allowed hours | 60s |
-| `loitering` | Person stationary in same area for 60s+ | 60s |
-| `tailgating` | Access granted + multiple persons detected | 10s |
-| `panic_button` | Emergency distress signal triggered | 10s |
-| `fire_detected` | Smoke/fire event reported | 30s |
+| `intrusion_attempt` | Person detected + access denied |
+| `unauthorized_access` | Person in restricted zone | 
+| `after_hours_presence` | Person outside allowed hours | 
+| `loitering` | Person stationary in same area for 60s+ | 
+| `tailgating` | Access granted + multiple persons detected | 
+| `panic_button` | Emergency distress signal triggered | 
+| `fire_detected` | Smoke/fire event reported |
 
 ### AI-Powered Advisory (OpenAI)
 Each detected incident is analysed by an AI advisor that outputs:
