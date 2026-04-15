@@ -26,7 +26,7 @@ export const CAMERA_CONFIG = [
     source: "device",
     deviceIndex: 0,
     streamUrl: "",
-    processingIntervalMs: 2000,
+    processingIntervalMs: 1000,
   },
   {
     id: "cam_02",
@@ -35,7 +35,16 @@ export const CAMERA_CONFIG = [
     source: "device",
     deviceIndex: 1,
     streamUrl: "",
-    processingIntervalMs: 2000,
+    processingIntervalMs: 1000,
+  },
+  {
+    id: "cam_03",
+    name: "Main Gate Camera",
+    location: "main_gate",
+    source: "device",
+    deviceIndex: 2,
+    streamUrl: "",
+    processingIntervalMs: 1000,
   }
 ];
 

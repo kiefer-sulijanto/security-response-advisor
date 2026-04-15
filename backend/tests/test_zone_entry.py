@@ -144,7 +144,7 @@ def test_restricted_area_entry_emits_again_after_exit_and_reentry(pipeline):
     result_2 = pipeline.process_cctv_frame(
         frame="dummy_frame",
         camera_id="cam_01",
-        timestamp_override="2026-04-12T18:00:09",
+        timestamp_override="2026-04-12T18:00:11",
         include_debug=True,
     )
     print("BUFFERED EVENTS:", pipeline.get_buffered_events())

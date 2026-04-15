@@ -3,11 +3,12 @@ from collections import defaultdict
 from datetime import timedelta
 from pathlib import Path
 
+from core import events
 from core.incident import Incident
 
 
 class IncidentEngine:
-    def __init__(self, rules_file=None, duplicate_cooldown_seconds=30, consumed_retention_seconds=120):
+    def __init__(self, rules_file=None, duplicate_cooldown_seconds=10, consumed_retention_seconds=120):
         if rules_file is None:
             rules_file = Path(__file__).resolve().parent.parent / "config" / "incident_rules.json"
 
@@ -39,6 +40,9 @@ class IncidentEngine:
             and isinstance(rule.get("events", []), list)
             and isinstance(rule.get("time_window", 0), (int, float))
         )
+    
+    def process_events(self, events):
+        return self.detect_incidents(events)
 
     def detect_incidents(self, events):
         if not events:
@@ -228,13 +232,27 @@ class IncidentEngine:
 
     def _build_incident_signature(self, incident_name, matching_events):
         try:
-            location = getattr(matching_events[0], "location", "unknown")
-            event_signature = tuple(
-                sorted(self._event_key(event) for event in matching_events)
-            )
-            return (incident_name, location, event_signature)
-        except (AttributeError, TypeError, ValueError):
-            return (incident_name, "unknown", ())
+            first_event = matching_events[0] if matching_events else None
+            location = getattr(first_event, "location", "unknown")
+
+            camera_id = "unknown"
+            source = "unknown"
+
+            for event in matching_events:
+                metadata = getattr(event, "metadata", {}) or {}
+                if isinstance(metadata, dict):
+                    if metadata.get("camera_id"):
+                        camera_id = metadata["camera_id"]
+                        break
+
+            if first_event is not None:
+                source = getattr(first_event, "source", "unknown")
+
+            identity = camera_id if camera_id != "unknown" else source
+            return (incident_name, location, identity)
+
+        except (AttributeError, TypeError, ValueError, KeyError):
+            return (incident_name, "unknown", "unknown")
 
     def _is_duplicate(self, signature, incident_time):
         try:
@@ -243,11 +261,12 @@ class IncidentEngine:
                 return False
 
             if incident_time < last_seen:
-                return True  # suppress older late-arriving duplicate
+                return True
 
             return (incident_time - last_seen) <= self.duplicate_cooldown
         except (TypeError, ValueError):
             return False
+
 
     def _cleanup_old_incidents(self, events):
         valid_timestamps = [event.timestamp for event in events if hasattr(event, "timestamp")]

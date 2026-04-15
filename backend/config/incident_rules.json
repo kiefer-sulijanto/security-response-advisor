@@ -33,5 +33,10 @@
     "events": ["smoke_detected"],
     "time_window": 30,
     "description": "Possible fire detected"
-  }
+  },
+  "physical_altercation": {
+  "events": ["fight_detected"],
+  "time_window": 10,
+  "description": "Possible physical fight or aggressive confrontation detected"
+}
 }

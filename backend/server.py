@@ -77,7 +77,7 @@ CAMERA_REGISTRY = [
         "location": "server_room",
         "conf_threshold": 0.7,
         "restricted_zones": {
-            "cam_sim_01": []
+            "cam_01": []
         }
     },
     {
@@ -86,7 +86,16 @@ CAMERA_REGISTRY = [
         "location": "lobby",
         "conf_threshold": 0.7,
         "restricted_zones": {
-            "cam_phone_01": []
+            "cam_02": []
+        }
+    },
+    {
+        "camera_id": "cam_03",
+        "model_path": "models/yolov8n.pt",
+        "location": "main_gate",
+        "conf_threshold": 0.7,
+        "restricted_zones": {
+            "cam_03": []
         }
     }
 ]

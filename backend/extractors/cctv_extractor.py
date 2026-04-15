@@ -5,6 +5,8 @@ from typing import Any
 
 from ultralytics import YOLO
 
+from extractors.fighting_detector import BoundingBox, FightingDetector
+
 
 class CCTVExtractor:
     def __init__(
@@ -24,6 +26,9 @@ class CCTVExtractor:
         self.location = location
         self.conf_threshold = conf_threshold
         self.restricted_zones = restricted_zones or {}
+
+        # Keep one detector instance per camera extractor so tracking persists across frames
+        self.fighting_detector = FightingDetector()
 
     @staticmethod
     def _point_in_polygon(point: tuple[float, float], polygon: list[tuple[float, float]]) -> bool:
@@ -91,6 +96,7 @@ class CCTVExtractor:
 
         detections: list[dict] = []
         debug_results: list[dict] = []
+        fight_boxes: list[BoundingBox] = []
 
         for result in results:
             names = result.names
@@ -129,10 +135,39 @@ class CCTVExtractor:
                     detections.append(detection)
                     person_count += 1
 
+                    fight_boxes.append(
+                        BoundingBox(
+                            x1=float(x1),
+                            y1=float(y1),
+                            x2=float(x2),
+                            y2=float(y2),
+                            confidence=confidence,
+                        )
+                    )
+
                 except (AttributeError, TypeError, ValueError, IndexError, KeyError):
                     continue
 
             debug_results.append({"person_count": person_count})
+
+        # Run fight logic on current frame's person boxes
+        fight_result = self.fighting_detector.process_frame(fight_boxes)
+
+        if fight_result.get("fighting_detected"):
+            detections.append(
+                {
+                    "label": "fighting_or_aggressive",
+                    "timestamp": timestamp_value,
+                    "location": self.location,
+                    "camera_id": self.camera_id,
+                    "confidence": 1.0,
+                    "bbox": None,
+                    "center": None,
+                    "in_restricted_area": False,
+                    "person_count": fight_result.get("person_count", 0),
+                    "alert_pairs": fight_result.get("alert_pairs", []),
+                }
+            )
 
         return {
             "detections": detections,
@@ -143,6 +178,9 @@ class CCTVExtractor:
                 "threshold": float(threshold),
                 "results": debug_results,
                 "total_detections": len(detections),
+                "fight_detected": fight_result.get("fighting_detected", False),
+                "fight_alert_pairs": fight_result.get("alert_pairs", []),
+                "tracked_person_count": fight_result.get("person_count", 0),
             },
         }
 

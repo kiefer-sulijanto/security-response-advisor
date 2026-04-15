@@ -43,7 +43,21 @@ const FLAG_SCORE = {
 
 function normalizeFrameResult(response, frameMeta = {}) {
   const results = response?.results || [];
+  const systemErrors = results.filter((r) => r.is_system_error);
   const goodResults = results.filter((r) => !r.is_system_error);
+
+  if (systemErrors.length > 0) {
+    return {
+      flag: "yellow",
+      explanation: systemErrors[0]?.message || "Pipeline system error occurred.",
+      flagReason: systemErrors[0]?.error_code || "pipeline_error",
+      actions: ["Check backend pipeline configuration"],
+      advisory: null,
+      incidentData: null,
+      rawPipelineResponse: response,
+      frameTimestamp: frameMeta.timestamp,
+    };
+  }
 
   if (goodResults.length === 0) {
     return {
@@ -74,7 +88,7 @@ function normalizeFrameResult(response, frameMeta = {}) {
   };
 }
 
-function aggregateFrameResults(frameResults) {
+function aggregateFrameResults(frameResults, options = {}) {
   if (!frameResults.length) {
     return {
       segments: advisoryToSegments("green", "No frames were analyzed."),
@@ -84,6 +98,8 @@ function aggregateFrameResults(frameResults) {
       flagReason: "No analysis",
       recommendedOfficer: null,
       frameResults: [],
+      stoppedEarly: false,
+      stopReason: null,
     };
   }
 
@@ -101,19 +117,25 @@ function aggregateFrameResults(frameResults) {
     .slice(0, 5)
     .map((v) => `${v.toFixed(1)}s`);
 
+  const earlyStopSuffix = options.stoppedEarly
+    ? ` Analysis stopped early after detecting ${options.stopReason || "a confirmed incident"}.`
+    : "";
+
   return {
     segments: advisoryToSegments(worst.flag, worst.flagReason),
     actions: mergedActions.length ? mergedActions : ["Review footage manually if needed"],
     flag: worst.flag,
     explanation:
       triggeredCount > 0
-        ? `${worst.explanation} (${triggeredCount} frame(s) triggered incident logic${triggeredTimes.length ? ` around ${triggeredTimes.join(", ")}` : ""}.)`
-        : "No incident was triggered across the sampled frames.",
+        ? `${worst.explanation} (${triggeredCount} frame(s) triggered incident logic${triggeredTimes.length ? ` around ${triggeredTimes.join(", ")}` : ""}.)${earlyStopSuffix}`
+        : `No incident was triggered across the sampled frames.${earlyStopSuffix}`,
     flagReason: worst.flagReason,
     recommendedOfficer: null,
     frameResults,
     advisory: worst.advisory,
     incidentData: worst.incidentData,
+    stoppedEarly: !!options.stoppedEarly,
+    stopReason: options.stopReason || null,
   };
 }
 
@@ -123,21 +145,48 @@ export async function runPipelineMultiFrameAnalysis(frames, meta = {}) {
   }
 
   const responses = [];
+  const incidentCounts = {};
+  let stoppedEarly = false;
+  let stopReason = null;
+
+  const earlyStopFlagLevels = meta.earlyStopFlagLevels || ["red"];
+  const earlyStopHitThreshold = meta.earlyStopHitThreshold ?? 2;
+
   for (const frame of frames) {
     const imageBase64 = typeof frame === "string" ? frame : frame?.imageBase64;
     const timestamp = typeof frame === "object" ? frame?.timestamp : undefined;
 
     const response = await api.processCctvFrame({
       image_base64: imageBase64,
-      camera_id: meta.camera_id || "cam_sim_01",
+      camera_id: meta.camera_id || "cam_01",
       location: meta.location || "server_room",
       confidence_threshold: meta.confidence_threshold ?? 0.45,
-      frame_timestamp_seconds: timestamp, 
+      frame_timestamp_seconds: timestamp,
+      include_debug: true,
     });
 
-    responses.push(normalizeFrameResult(response, { timestamp }));
-    
+    const normalized = normalizeFrameResult(response, { timestamp });
+    responses.push(normalized);
+
+    const incidentName = normalized?.incidentData?.name || null;
+    const incidentFlag = (normalized?.flag || "green").toLowerCase();
+
+    if (incidentName) {
+      incidentCounts[incidentName] = (incidentCounts[incidentName] || 0) + 1;
+    }
+
+    const shouldStopByFlag = earlyStopFlagLevels.includes(incidentFlag);
+    const shouldStopByRepeatedIncident =
+      incidentName && incidentCounts[incidentName] >= earlyStopHitThreshold;
+
+    if (shouldStopByFlag || shouldStopByRepeatedIncident) {
+      stoppedEarly = true;
+      stopReason = shouldStopByFlag
+        ? `${incidentFlag} severity incident detected`
+        : `${incidentName} detected ${incidentCounts[incidentName]} times`;
+      break;
+    }
   }
 
-  return aggregateFrameResults(responses);
+  return aggregateFrameResults(responses, { stoppedEarly, stopReason });
 }

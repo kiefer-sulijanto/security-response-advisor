@@ -205,6 +205,27 @@ def test_adapter_returns_empty_for_invalid_input():
     assert process_cctv_detection(None) == []
     assert process_cctv_detection("not a dict") == []
     assert process_cctv_detection({}) == []
+    
+def test_adapter_maps_fighting_detection_to_fight_event(fake_timestamp):
+    detection = {
+        "label": "fighting_or_aggressive",
+        "timestamp": fake_timestamp,
+        "location": "lobby",
+        "camera_id": "cam_01",
+        "confidence": 1.0,
+        "bbox": None,
+        "center": None,
+        "in_restricted_area": False,
+        "person_count": 2,
+    }
+
+    events = process_cctv_detection(detection)
+
+    assert len(events) == 1
+    assert events[0].event_type == EventType.FIGHT_DETECTED
+    assert events[0].location == "lobby"
+    assert events[0].source == "cctv"
+
 
 
 # -----------------------------

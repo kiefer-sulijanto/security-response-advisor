@@ -28,6 +28,7 @@ class PipelineService:
         self.processor = EventStreamProcessor(window_seconds=window_seconds)
         self.engine = IncidentEngine(
             rules_file=rules_file,
+            duplicate_cooldown_seconds=10,
             consumed_retention_seconds=window_seconds,
         )
         self.enable_advisory = enable_advisory

@@ -36,19 +36,17 @@ export function UploadPage({ onAnalysisComplete }) {
     if (!file) return;
 
     setStatus("extracting");
-    setStatusLabel("Extracting frames every 1 second…");
+    setStatusLabel("Extracting frames every 0.5 seconds…");
     setErrorMsg("");
 
     try {
-      const frames = await extractFramesEveryNSeconds(file, 1, 30);
-
-      setStatus("analyzing");
-      setStatusLabel("Analyzing sampled CCTV frames…");
+      const frames = await extractFramesEveryNSeconds(file, 0.5, 60);
 
       const result = await runPipelineMultiFrameAnalysis(frames, {
-        camera_id: "cam_sim_01",
+        camera_id: "cam_01",
         location: location || "server_room",
         confidence_threshold: 0.45,
+        earlyStopHitThreshold: 2
       });
 
       onAnalysisComplete({
