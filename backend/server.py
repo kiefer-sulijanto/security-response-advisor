@@ -48,10 +48,16 @@ app.add_middleware(
 # ---------------------------------------------------------------------------
 
 officers_db: list[dict] = [
-    {"id": "go1", "name": "John Tan",   "badge": "SO-1024", "status": "standby", "location": "Main Lobby",      "task": None},
-    {"id": "go2", "name": "Sarah Lim",  "badge": "SO-2031", "status": "standby", "location": "Floor 3",         "task": None},
-    {"id": "go3", "name": "Mike Chen",  "badge": "SO-1156", "status": "standby", "location": "Basement B1",     "task": None},
-    {"id": "go4", "name": "Amy Koh",    "badge": "SO-3042", "status": "standby", "location": "Perimeter Gate",  "task": None},
+    {"id": "go1",  "name": "Richard Woods",   "badge": "SO-1001", "status": "standby", "location": "Main Lobby",      "task": None, "online": False},
+    {"id": "go2",  "name": "Carolyn Fuller",   "badge": "SO-1002", "status": "standby", "location": "Floor 3",         "task": None, "online": False},
+    {"id": "go3",  "name": "Stephen Davies",   "badge": "SO-1003", "status": "standby", "location": "Basement B1",     "task": None, "online": False},
+    {"id": "go4",  "name": "Franklin Gibson",  "badge": "SO-1004", "status": "standby", "location": "Perimeter Gate",  "task": None, "online": False},
+    {"id": "go5",  "name": "Carol Barnes",     "badge": "SO-1005", "status": "standby", "location": "Control Room",    "task": None, "online": False},
+    {"id": "go6",  "name": "Eric Diaz",        "badge": "SO-1006", "status": "standby", "location": "East Wing",       "task": None, "online": False},
+    {"id": "go7",  "name": "Alex Hugh",        "badge": "SO-1007", "status": "standby", "location": "West Wing",       "task": None, "online": False},
+    {"id": "go8",  "name": "Sarah Moreno",     "badge": "SO-1008", "status": "standby", "location": "Carpark B2",      "task": None, "online": False},
+    {"id": "go9",  "name": "Gilbert Leonard",  "badge": "SO-1009", "status": "standby", "location": "Loading Bay",     "task": None, "online": False},
+    {"id": "go10", "name": "Tyson Bernard",    "badge": "SO-1010", "status": "standby", "location": "Main Entrance",   "task": None, "online": False},
 ]
 
 INITIAL_OFFICERS_DB = copy.deepcopy(officers_db)
@@ -96,6 +102,15 @@ CAMERA_REGISTRY = [
         "conf_threshold": 0.7,
         "restricted_zones": {
             "cam_03": []
+        }
+    },
+    {
+        "camera_id": "cam_analysis_01",
+        "model_path": "models/yolov8n.pt",
+        "location": "analysis",
+        "conf_threshold": 0.7,
+        "restricted_zones": {
+            "cam_analysis_01": []
         }
     }
 ]
@@ -237,7 +252,7 @@ def _parse_iso_timestamp(value: str | None) -> datetime | None:
     except (TypeError, ValueError):
         return None
 
-def _persist_pipeline_results(results: list[dict], source_name: str) -> int:
+def _persist_pipeline_results(results: list[dict], source_name: str, snapshot_base64=None) -> int:
     created_count = 0
     duplicate_cooldown_seconds = 30
 
@@ -295,6 +310,7 @@ def _persist_pipeline_results(results: list[dict], source_name: str) -> int:
             "status": "open",
             "assignedTo": None,
             "createdAt": incident_timestamp.isoformat(),
+            "snapshot_base64": snapshot_base64,
         }
 
         incidents_db.append(incident)
@@ -379,6 +395,7 @@ def create_incident(req: CreateIncidentRequest):
         "status": "open",
         "assignedTo": None,
         "createdAt": datetime.now().isoformat(),
+        "snapshot_base64": req.snapshot_base64,
     }
     incidents_db.append(incident)
     return incident
@@ -563,7 +580,7 @@ def pipeline_cctv_frame(req: CCTVFrameRequest):
     )
 
     results = pipeline_output.get("results", [])
-    created = _persist_pipeline_results(results, "CCTV Frame Pipeline")
+    created = _persist_pipeline_results(results, "CCTV Frame Pipeline",req.image_base64)
 
     return {
         "results": results,

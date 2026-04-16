@@ -29,17 +29,34 @@ export function GroundOfficersPage({ groundOfficers, dispatches, incidents, onDi
   const responding = groundOfficers.filter(g => g.status === "responding");
 
   return (
-    <div style={{ flex: 1, overflow: "auto", background: C.bg, fontFamily: font }}>
+    <div style={{ flex: 1, overflow: "auto", background: C.bg, fontFamily: font, overscrollBehavior: "contain" }}>
       <TopBar title="Ground Officers" subtitle="Field team — live status" criticalCount={criticalCount} />
 
       <div style={{ padding: "24px 28px", display: "flex", flexDirection: "column", gap: 20 }}>
 
         {/* Summary row */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 14 }}>
-          <MiniStat label="On Duty"    value={onDuty.length}       accent={C.green} />
-          <MiniStat label="Responding" value={responding.length}   accent={C.red}   />
-          <MiniStat label="Patrolling" value={groundOfficers.filter(g=>g.status==="patrolling").length} accent={C.amber} />
-          <MiniStat label="Dispatches Today" value={dispatches.length} accent={C.blue} />
+          <MiniStat label="On Duty"         value={onDuty.length}       accent={C.green} icon={
+            <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+          }/>
+          <MiniStat label="Responding"      value={responding.length}   accent={C.red}   icon={
+            <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+              <polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+            </svg>
+          }/>
+          <MiniStat label="Patrolling"      value={groundOfficers.filter(g=>g.status==="patrolling").length} accent={C.amber} icon={
+            <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+          }/>
+          <MiniStat label="Dispatches Today" value={dispatches.length}  accent={C.blue}  icon={
+            <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/>
+            </svg>
+          }/>
         </div>
 
         {/* Officer cards */}
@@ -71,6 +88,12 @@ export function GroundOfficersPage({ groundOfficers, dispatches, incidents, onDi
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                         <span style={{ fontSize: 14, fontWeight: 700, color: C.textPrimary }}>{officer.name}</span>
+                        {officer.online && (
+                          <span style={{
+                            width: 7, height: 7, borderRadius: "50%", background: "#22c55e",
+                            display: "inline-block", boxShadow: "0 0 0 3px rgba(34,197,94,0.25)", flexShrink: 0,
+                          }} title="Online" />
+                        )}
                       </div>
                       <div style={{ fontSize: 12, color: C.textSecondary, marginTop: 1 }}>{officer.badge} · {officer.shift} Shift</div>
                       <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 6 }}>
@@ -98,7 +121,7 @@ export function GroundOfficersPage({ groundOfficers, dispatches, incidents, onDi
                   <div style={{ padding: "0 18px 12px", borderBottom: `1px solid ${C.border}` }}>
                     <div style={{ fontSize: 11, color: C.textMuted, textTransform: "uppercase", letterSpacing: "0.4px", marginBottom: 4 }}>Current Task</div>
                     <div style={{ fontSize: 13, color: C.textPrimary }}>{officer.task}</div>
-                    <div style={{ fontSize: 11, color: C.textMuted, marginTop: 2 }}>📍 {officer.location} · Updated {officer.lastUpdate}</div>
+                    <div style={{ fontSize: 11, color: C.textMuted, marginTop: 2 }}>Updated {officer.lastUpdate}</div>
                   </div>
 
                   {/* Recent dispatches to this officer */}
@@ -231,11 +254,16 @@ export function GroundOfficersPage({ groundOfficers, dispatches, incidents, onDi
   );
 }
 
-function MiniStat({ label, value, accent }) {
+function MiniStat({ label, value, accent, icon }) {
   return (
     <div style={card({ padding: "16px 18px" })}>
-      <div style={{ fontSize: 28, fontWeight: 800, color: accent, lineHeight: 1 }}>{value}</div>
-      <div style={{ fontSize: 12, color: C.textMuted, marginTop: 4 }}>{label}</div>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 12 }}>
+        <span style={{ fontSize: 10, fontWeight: 700, color: C.textMuted, textTransform: "uppercase", letterSpacing: "0.5px" }}>
+          {label}
+        </span>
+        <span style={{ color: `${accent}66` }}>{icon}</span>
+      </div>
+      <div style={{ fontSize: 30, fontWeight: 800, color: C.textPrimary, lineHeight: 1 }}>{value}</div>
     </div>
   );
 }

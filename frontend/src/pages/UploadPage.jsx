@@ -15,12 +15,12 @@ export function UploadPage({ onAnalysisComplete }) {
   const [file, setFile]           = useState(null);
   const [dragging, setDragging]   = useState(false);
   const [hovering, setHovering]   = useState(false);
+  const [location, setLocation] = useState("server_room");
   const [status, setStatus]       = useState("idle"); // idle | extracting | analyzing | error
   const [statusLabel, setStatusLabel] = useState("");
   const [errorMsg, setErrorMsg]   = useState("");
   // Incident context for AI
   const [incidentType, setIncidentType] = useState("");
-  const [location, setLocation]         = useState("");
   const fileInputRef = useRef(null);
 
   const handleFile = useCallback((f) => {
@@ -42,18 +42,23 @@ export function UploadPage({ onAnalysisComplete }) {
     try {
       const frames = await extractFramesEveryNSeconds(file, 0.5, 60);
 
+      setStatus("analyzing");
+      setStatusLabel("AI analyzing footage…");
+
       const result = await runPipelineMultiFrameAnalysis(frames, {
-        camera_id: "cam_01",
-        location: location || "server_room",
+        camera_id: "cam_analysis_01",
+        location:  location,
         confidence_threshold: 0.45,
-        earlyStopHitThreshold: 2
+        earlyStopFlagLevels: ["red"],
+        earlyStopHitThreshold: 2,
       });
 
       onAnalysisComplete({
-        videoUrl: URL.createObjectURL(file),
-        filename: file.name,
-        result,
-      });
+      videoUrl: URL.createObjectURL(file),
+      filename: file.name,
+      location,
+      result,
+    });
     } catch (err) {
       setStatus("error");
       setErrorMsg(err.message || "Analysis failed. Please try again.");
@@ -67,7 +72,7 @@ export function UploadPage({ onAnalysisComplete }) {
   const dzShadow  = isActive ? `0 0 0 4px rgba(92,186,71,0.15)` : hovering ? `0 0 0 3px rgba(255,255,255,0.06)` : "none";
 
   return (
-    <div style={{ flex: 1, overflow: "auto", background: C.bg, fontFamily: font }}>
+    <div style={{ flex: 1, overflow: "auto", background: C.bg, fontFamily: font, overscrollBehavior: "contain" }}>
       <TopBar title="Analyze Footage" subtitle="Upload a video for AI threat detection" criticalCount={0} />
       <div style={{ padding: "40px 28px", display: "flex", flexDirection: "column", alignItems: "center" }}>
         <div style={card({ padding: 32, width: "100%", maxWidth: 640 })}>
@@ -116,24 +121,26 @@ export function UploadPage({ onAnalysisComplete }) {
           )}
 
           {/* Incident context — optional, improves AI output */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 20 }}>
-            <div>
-              <label style={ctxLabel}>Incident Type (optional)</label>
-              <select value={incidentType} onChange={e => setIncidentType(e.target.value)} style={ctxInput(C)}>
-                <option value="">— Auto-detect —</option>
-                {INCIDENT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-              </select>
-            </div>
-            <div>
-              <label style={ctxLabel}>Camera / Location (optional)</label>
-              <input
-                type="text"
-                placeholder="e.g. Basement B2 — Camera 04"
-                value={location}
-                onChange={e => setLocation(e.target.value)}
-                style={ctxInput(C)}
-              />
-            </div>
+          <div style={{ marginBottom: 20 }}>
+            <label style={ctxLabel}>Incident Type (optional)</label>
+            <select value={incidentType} onChange={e => setIncidentType(e.target.value)} style={ctxInput(C)}>
+              <option value="">— Auto-detect —</option>
+              {INCIDENT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+            </select>
+          </div>
+          <div style={{ marginBottom: 20 }}>
+            <label style={ctxLabel}>Location</label>
+            <select
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              style={ctxInput(C)}
+            >
+              <option value="server_room">Server Room</option>
+              <option value="lobby">Lobby</option>
+              <option value="gate_a">Gate A</option>
+              <option value="reception">Reception</option>
+              <option value="restricted_area">Restricted Area</option>
+            </select>
           </div>
 
           {isRunning && (
@@ -180,10 +187,7 @@ export function UploadPage({ onAnalysisComplete }) {
             onMouseEnter={e => { if (file && !isRunning) e.currentTarget.style.transform = "scale(1.04)"; }}
             onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
             >
-              {isRunning ? <Spinner size={16} /> : (
-                <span style={{ width: 16, height: 16, background: "#1a1a1a", borderRadius: "50%",
-                  opacity: !file ? 0.3 : 1 }} />
-              )}
+              {isRunning && <Spinner size={16} />}
               {isRunning ? statusLabel : "Upload & Analyze"}
             </button>
           </div>

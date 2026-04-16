@@ -9,10 +9,13 @@ import { IncidentsPage }      from "./pages/IncidentsPage";
 import { ResultsPage }        from "./pages/ResultsPage";
 import { GroundOfficersPage } from "./pages/GroundOfficersPage";
 import { ShiftReportPage }    from "./pages/ShiftReportPage";
+import { ReportPage }         from "./pages/ReportPage";
+import { LoginPage }          from "./pages/LoginPage";
 import { CAMERA_CONFIG } from "./config/cameras";
 import { CameraProcessor } from "./components/CameraProcessor";
 
 export default function App() {
+  const [loggedIn, setLoggedIn]               = useState(false);
   const [page, setPage]                       = useState("dashboard");
   const [analyses, setAnalyses]               = useState([]);
   const [incidents, setIncidents]             = useState([]);
@@ -90,15 +93,23 @@ export default function App() {
     if (page === "officers")
       return <GroundOfficersPage groundOfficers={groundOfficers} dispatches={dispatches}
                incidents={incidents} onDispatch={handleDispatch} criticalCount={criticalCount} />;
+    if (page === "report")
+      return <ReportPage analyses={analyses} incidents={incidents} dispatches={dispatches}
+               groundOfficers={groundOfficers} criticalCount={criticalCount} goReports={goReports} />;
     if (page === "shift")
       return <ShiftReportPage analyses={analyses} incidents={incidents} dispatches={dispatches}
-               groundOfficers={groundOfficers} criticalCount={criticalCount} goReports={goReports} />;
+               goReports={goReports} criticalCount={criticalCount}
+               onLogout={() => { setLoggedIn(false); setPage("dashboard"); }} />;
     return <DashboardPage onNav={setPage} analyses={analyses} incidents={incidents}
              groundOfficers={groundOfficers} dispatches={dispatches} />;
   };
 
+  if (!loggedIn) {
+    return <LoginPage onLogin={() => setLoggedIn(true)} />;
+  }
+
   return (
-    <div style={{ display: "flex", minHeight: "100vh", background: C.bg }}>
+    <div style={{ display: "flex", height: "100vh", overflow: "hidden", background: C.bg }}>
       <style>{`
         @keyframes spin  { to { transform: rotate(360deg) } }
         @keyframes pulse { 0%,100% { opacity:1 } 50% { opacity:.4 } }

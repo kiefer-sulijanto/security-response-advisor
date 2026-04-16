@@ -144,7 +144,6 @@ export default function ReportPage({ officer, onAddReport }) {
             <textarea
               className="input-field"
               rows={5}
-              placeholder="Describe what happened, who was involved, and any immediate actions taken..."
               value={form.description}
               onChange={e => set('description', e.target.value)}
               style={{ resize: 'vertical', minHeight: 100 }}
@@ -153,13 +152,6 @@ export default function ReportPage({ officer, onAddReport }) {
               {errors.description ? <ErrMsg>{errors.description}</ErrMsg> : <span />}
               <span style={{ fontSize: 11, color: '#7a8899' }}>{form.description.length} chars</span>
             </div>
-          </div>
-
-          {/* Officer info (read-only) */}
-          <div className="card" style={{ background: '#141f2e' }}>
-            <div style={{ fontSize: 12, color: '#7a8899', marginBottom: 6, fontWeight: 600, textTransform: 'uppercase' }}>Submitted by</div>
-            <div style={{ fontSize: 14, fontWeight: 600 }}>{officer.name}</div>
-            <div style={{ fontSize: 12, color: '#7a8899' }}>{officer.badge} · {officer.shift.label}</div>
           </div>
 
           <button type="submit" className="btn btn-primary btn-full" style={{ padding: '14px 20px', fontSize: 16, marginBottom: 8 }}>

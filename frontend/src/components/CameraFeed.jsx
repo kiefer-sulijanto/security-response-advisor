@@ -223,9 +223,6 @@ export function CameraFeed({ cam }) {
             <p style={{ fontSize: 13, fontWeight: 700, color: C.textPrimary, margin: 0 }}>
               {cam.name}
             </p>
-            <p style={{ fontSize: 11, color: C.textMuted, margin: "2px 0 0" }}>
-              {cam.location}
-            </p>
           </div>
 
           <span

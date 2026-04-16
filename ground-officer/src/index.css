@@ -6,17 +6,17 @@
 }
 
 :root {
-  --bg:        #0f1923;
-  --surface:   #1a2535;
-  --card:      #1e2d42;
-  --border:    #253448;
+  --bg:        #18181b;
+  --surface:   #242428;
+  --card:      #242428;
+  --border:    #323238;
   --accent:    #F07820;
-  --critical:  #e74c3c;
-  --high:      #f39c12;
-  --medium:    #3b82f6;
+  --critical:  #e24b4a;
+  --high:      #efaf27;
+  --medium:    #4a9eff;
   --low:       #22c55e;
-  --text:      #f0f4f8;
-  --muted:     #7a8899;
+  --text:      #f0f0f0;
+  --muted:     #555960;
   --nav-h:     64px;
   --topbar-h:  56px;
 }
@@ -35,7 +35,7 @@ html, body {
   height: 100%;
   display: flex;
   justify-content: center;
-  background: #080e17;
+  background: #111114;
 }
 
 .app-shell {

@@ -16,8 +16,8 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: '14px 18px 12px',
-    background: '#0f1923',
-    borderBottom: '1px solid #1e2d42',
+    background: '#18181b',
+    borderBottom: '1px solid #323238',
     flexShrink: 0,
     paddingTop: 'calc(14px + env(safe-area-inset-top))',
   },
@@ -28,7 +28,7 @@ const styles = {
   },
   sub: {
     fontSize: 12,
-    color: '#7a8899',
+    color: '#555960',
     marginTop: 1,
   },
 }

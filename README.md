@@ -47,8 +47,8 @@ CCTV / Video Upload / Live Stream
 ### Intelligent Incident Detection
 Rule-based correlation engine that fuses multiple signals into structured incidents:
 
-| Incident | Trigger | Time Window |
-|----------|---------|-------------|
+| Incident | Trigger | 
+|----------|---------|
 | `intrusion_attempt` | Person detected + access denied |
 | `unauthorized_access` | Person in restricted zone | 
 | `after_hours_presence` | Person outside allowed hours | 
@@ -117,8 +117,12 @@ cd security-response-advisor
 ```env
 OPENAI_API_KEY=sk-...
 
-FRONTEND_ORIGINS=http://localhost:5173,http://localhost:5174,http://localhost:5175
+FRONTEND_ORIGINS=http://localhost:5173,http://localhost:5174,http://localhost:5175,http://<YOUR_LAPTOP_IP>:5173,http://<YOUR_LAPTOP_IP>:5174,http://<YOUR_LAPTOP_IP>:5175
 ```
+
+**`ground-officer/.env`**
+```env
+VITE_API_BASE=http://<YOUR_LAPTOP_IP>:8000/api
 
 **`demo-trigger/.env`**
 ```env
@@ -176,7 +180,7 @@ npm install
 npm run dev -- --host
 ```
 
-Open `http://localhost:5175`
+Open `http://localhost:5175` — or access from a phone on the same network.
 
 ---
 

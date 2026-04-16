@@ -20,8 +20,12 @@ export function Badge({ sev }) {
   };
   const t = map[sev] || map.info;
   return (
-    <span style={{ background: t.bg, color: t.color, fontSize: 11, fontWeight: 700,
-      padding: "3px 9px", borderRadius: 20, letterSpacing: ".4px", textTransform: "uppercase" }}>
+    <span style={{
+      display: "inline-flex", alignItems: "center", width: "fit-content",
+      background: t.bg, color: t.color, fontSize: 11, fontWeight: 700,
+      padding: "3px 10px", borderRadius: 20, letterSpacing: ".4px", textTransform: "uppercase",
+      border: `1px solid ${t.color}30`,
+    }}>
       {t.label}
     </span>
   );
@@ -29,12 +33,15 @@ export function Badge({ sev }) {
 
 // ── StatusDot ──────────────────────────────────────────────────────────────
 export function StatusDot({ status }) {
-  const col = status === "active" ? C.red
+  const col = status === "active"      ? C.red
+            : status === "open"        ? C.amber
             : status === "in_progress" ? C.blue
             : status === "reviewing"   ? C.amber
-            : C.green;
+            : "#22c55e";
   return <span style={{ display: "inline-block", width: 7, height: 7, borderRadius: "50%",
-    background: col, marginRight: 6, flexShrink: 0 }} />;
+    background: col, marginRight: 6, flexShrink: 0,
+    boxShadow: status === "active" || status === "open" ? `0 0 0 3px ${col}33` : "none",
+  }} />;
 }
 
 // ── StatCard ───────────────────────────────────────────────────────────────
@@ -42,13 +49,23 @@ import { card } from "../constants/colors";
 
 export function StatCard({ label, value, sub, accent, icon }) {
   return (
-    <div style={card({ padding: "20px 22px" })}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
-        <p style={{ fontSize: 13, color: C.textSecondary, fontWeight: 500, margin: 0 }}>{label}</p>
-        <span style={{ fontSize: 18, opacity: .7 }}>{icon}</span>
+    <div style={card({
+      padding: "18px 20px",
+      borderLeft: accent ? `3px solid ${accent}` : `3px solid ${C.border}`,
+      transition: "transform .15s, box-shadow .15s",
+    })}
+    onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 6px 24px rgba(0,0,0,0.3)"; }}
+    onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none"; }}
+    >
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 }}>
+        <p style={{ fontSize: 11, color: C.textMuted, fontWeight: 600, margin: 0, letterSpacing: ".5px", textTransform: "uppercase" }}>{label}</p>
+        <span style={{
+          width: 30, height: 30, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center",
+          background: accent ? `${accent}18` : C.border, fontSize: 14,
+        }}>{icon}</span>
       </div>
-      <p style={{ fontSize: 30, fontWeight: 800, color: accent || C.textPrimary, margin: "0 0 4px", lineHeight: 1 }}>{value}</p>
-      <p style={{ fontSize: 12, color: C.textMuted, margin: 0 }}>{sub}</p>
+      <p style={{ fontSize: 28, fontWeight: 800, color: accent || C.textPrimary, margin: "0 0 4px", lineHeight: 1 }}>{value}</p>
+      <p style={{ fontSize: 11, color: C.textMuted, margin: 0 }}>{sub}</p>
     </div>
   );
 }

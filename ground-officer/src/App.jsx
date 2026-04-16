@@ -7,6 +7,8 @@ import ReportPage   from './pages/ReportPage.jsx'
 import HandoverPage from './pages/HandoverPage.jsx'
 import BottomNav    from './components/BottomNav.jsx'
 import { INITIAL_TASKS } from './constants/mockData.js'
+
+const TASKS_VERSION = '2'  // bump this whenever INITIAL_TASKS changes
 import { api } from './services/api.js'
 
 // Map a backend dispatch object → alert shape used by AlertsPage / HomePage
@@ -29,8 +31,13 @@ export default function App() {
   const [alerts, setAlerts]   = useState([])          // live from backend
   const [tasks, setTasks]     = useState(() => {
     try {
+      const savedVersion = localStorage.getItem('certis_tasks_version')
       const saved = localStorage.getItem('certis_tasks')
-      return saved ? JSON.parse(saved) : INITIAL_TASKS
+      if (saved && savedVersion === TASKS_VERSION) return JSON.parse(saved)
+      // Version mismatch — reset to latest INITIAL_TASKS
+      localStorage.removeItem('certis_tasks')
+      localStorage.setItem('certis_tasks_version', TASKS_VERSION)
+      return INITIAL_TASKS
     } catch { return INITIAL_TASKS }
   })
   const [reports, setReports] = useState([])
@@ -55,8 +62,17 @@ export default function App() {
     return () => clearInterval(id)
   }, [officer, syncAlerts])
 
+  const handleLogin = async (officerData) => {
+    setOfficer(officerData)
+    try {
+      await api.updateMyStatus(officerData.id, { online: true })
+    } catch (err) {
+      console.warn('Could not set online status:', err.message)
+    }
+  }
+
   if (!officer) {
-    return <LoginPage onLogin={setOfficer} />
+    return <LoginPage onLogin={handleLogin} />
   }
 
   const unreadAlerts = alerts.filter(a => a.status === 'unread').length
@@ -74,7 +90,7 @@ export default function App() {
   const handleLogout = async () => {
     if (officer) {
       try {
-        await api.updateMyStatus(officer.id, { status: "standby", task: "Standby — awaiting assignment" })
+        await api.updateMyStatus(officer.id, { status: "standby", task: "Standby — awaiting assignment", online: false })
       } catch (err) {
         console.warn('Could not reset officer status:', err.message)
       }
@@ -89,6 +105,7 @@ export default function App() {
     setTasks(prev => {
       const updated = prev.map(t => t.id === id ? { ...t, done: !t.done } : t)
       localStorage.setItem('certis_tasks', JSON.stringify(updated))
+      localStorage.setItem('certis_tasks_version', TASKS_VERSION)
       return updated
     })
   }

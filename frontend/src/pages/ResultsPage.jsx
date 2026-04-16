@@ -1,10 +1,26 @@
+import { useRef, useState } from "react";
 import { C, card, font } from "../constants/colors";
 import { TopBar } from "../components/TopBar";
 
 export function ResultsPage({ analysis, onBack }) {
   const { videoUrl, filename, result } = analysis;
+  const videoRef    = useRef(null);
+  const [activeClip, setActiveClip] = useState(null);
+
+  const incidentSegs = result.segments.filter(s => s.color !== "#22c55e");
+
+  const seekTo = (seg, idx) => {
+    const vid = videoRef.current;
+    if (!vid) return;
+    const duration = vid.duration || 0;
+    const startSec = (seg.startPct / 100) * duration;
+    vid.currentTime = startSec;
+    vid.play();
+    setActiveClip(idx);
+  };
+
   return (
-    <div style={{ flex: 1, overflow: "auto", background: C.bg, fontFamily: font }}>
+    <div style={{ flex: 1, overflow: "auto", background: C.bg, fontFamily: font, overscrollBehavior: "contain" }}>
       <TopBar title="Analysis Results" subtitle={`AI threat detection complete · ${filename}`} criticalCount={0} />
       <div style={{ padding: "28px", display: "flex", flexDirection: "column", alignItems: "center", gap: 24 }}>
 
@@ -20,10 +36,18 @@ export function ResultsPage({ analysis, onBack }) {
 
         <div style={card({ padding: 0, overflow: "hidden", width: "100%", maxWidth: 720 })}>
           <div style={{ background: "#000" }}>
-            <video src={videoUrl} controls
-              style={{ width: "100%", display: "block", maxHeight: 420, objectFit: "cover" }} />
-            {/* 🤖 AI-GENERATED TIMELINE — segments come from runAIAnalysis() */}
-            <div style={{ width: "100%", height: 12, background: "#111", position: "relative" }}>
+            <video ref={videoRef} src={videoUrl} controls
+              style={{ width: "100%", display: "block", maxHeight: 420, objectFit: "cover" }}
+              onEnded={() => setActiveClip(null)} />
+            {/* Timeline */}
+            <div style={{ width: "100%", height: 12, background: "#111", position: "relative", cursor: "pointer" }}
+              onClick={e => {
+                const vid = videoRef.current;
+                if (!vid || !vid.duration) return;
+                const pct = (e.nativeEvent.offsetX / e.currentTarget.offsetWidth) * 100;
+                vid.currentTime = (pct / 100) * vid.duration;
+              }}
+            >
               {result.segments.map((seg, i) => (
                 <div key={i} style={{ position: "absolute", left: `${seg.startPct}%`,
                   width: `${seg.widthPct}%`, height: "100%", background: seg.color, opacity: .9 }} />
@@ -45,6 +69,68 @@ export function ResultsPage({ analysis, onBack }) {
             ))}
           </div>
         </div>
+
+        {/* Incident Clips */}
+        {incidentSegs.length > 0 && (
+          <div style={{ width: "100%", maxWidth: 720 }}>
+            <p style={{ fontSize: 18, fontWeight: 800, marginBottom: 14, color: C.textPrimary }}>Incident Clips</p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {incidentSegs.map((seg, idx) => {
+                const isActive = activeClip === idx;
+                return (
+                  <div key={idx}
+                    onClick={() => seekTo(seg, idx)}
+                    style={{
+                      ...card({ padding: "14px 18px" }),
+                      display: "flex", alignItems: "center", gap: 14,
+                      cursor: "pointer", transition: "border-color .15s, background .15s",
+                      borderColor: isActive ? seg.color : undefined,
+                      background: isActive ? `${seg.color}12` : undefined,
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = seg.color; }}
+                    onMouseLeave={e => { if (!isActive) e.currentTarget.style.borderColor = C.border; }}
+                  >
+                    {/* Play icon */}
+                    <div style={{
+                      width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+                      background: `${seg.color}22`, border: `1.5px solid ${seg.color}66`,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                    }}>
+                      {isActive ? (
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill={seg.color}>
+                          <rect x="2" y="1" width="3" height="12" rx="1"/>
+                          <rect x="9" y="1" width="3" height="12" rx="1"/>
+                        </svg>
+                      ) : (
+                        <svg width="12" height="14" viewBox="0 0 12 14" fill={seg.color}>
+                          <path d="M1 1l10 6-10 6V1z"/>
+                        </svg>
+                      )}
+                    </div>
+                    {/* Info */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: C.textPrimary, marginBottom: 2 }}>
+                        {seg.label}
+                      </div>
+                      <div style={{ fontSize: 12, color: C.textSecondary,
+                        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {seg.desc}
+                      </div>
+                    </div>
+                    {/* Timestamp badge */}
+                    <div style={{
+                      fontSize: 11, fontWeight: 700, color: seg.color,
+                      background: `${seg.color}18`, border: `1px solid ${seg.color}44`,
+                      borderRadius: 6, padding: "3px 8px", flexShrink: 0,
+                    }}>
+                      {Math.round(seg.startPct)}%
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* AI Explanation + Flag */}
         {result.explanation && (

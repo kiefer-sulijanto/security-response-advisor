@@ -14,12 +14,12 @@ export default function BottomNav({ current, onNavigate, unreadAlerts }) {
         return (
           <button key={id} style={styles.btn} onClick={() => onNavigate(id)}>
             <span style={{ position: 'relative', display: 'flex' }}>
-              <Icon size={22} color={active ? '#F07820' : '#7a8899'} />
+              <Icon size={22} color={active ? '#F07820' : '#555960'} />
               {id === 'alerts' && unreadAlerts > 0 && (
                 <span style={styles.badge}>{unreadAlerts > 9 ? '9+' : unreadAlerts}</span>
               )}
             </span>
-            <span style={{ ...styles.label, color: active ? '#F07820' : '#7a8899' }}>{label}</span>
+            <span style={{ ...styles.label, color: active ? '#F07820' : '#555960' }}>{label}</span>
           </button>
         )
       })}
@@ -31,8 +31,8 @@ const styles = {
   nav: {
     display: 'flex',
     height: 'var(--nav-h)',
-    background: '#121e2d',
-    borderTop: '1px solid #253448',
+    background: '#111114',
+    borderTop: '1px solid #323238',
     flexShrink: 0,
     paddingBottom: 'env(safe-area-inset-bottom)',
   },
@@ -57,7 +57,7 @@ const styles = {
     position: 'absolute',
     top: -5,
     right: -7,
-    background: '#e74c3c',
+    background: '#e24b4a',
     color: '#fff',
     fontSize: 9,
     fontWeight: 700,
