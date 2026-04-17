@@ -11,8 +11,6 @@ import { GroundOfficersPage } from "./pages/GroundOfficersPage";
 import { ShiftReportPage }    from "./pages/ShiftReportPage";
 import { ReportPage }         from "./pages/ReportPage";
 import { LoginPage }          from "./pages/LoginPage";
-import { CAMERA_CONFIG } from "./config/cameras";
-import { CameraProcessor } from "./components/CameraProcessor";
 
 export default function App() {
   const [loggedIn, setLoggedIn]               = useState(false);
@@ -130,12 +128,6 @@ export default function App() {
           ⚠ Backend offline — running in local mode
         </div>
       )}
-
-            <div style={{ display: "none" }}>
-        {CAMERA_CONFIG.map((cam) => (
-          <CameraProcessor key={`processor-${cam.id}`} cam={cam} />
-        ))}
-      </div>
 
       <Sidebar
         active={page === "results" ? "upload" : page}

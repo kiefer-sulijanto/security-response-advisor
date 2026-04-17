@@ -18,6 +18,7 @@ export function ResultsPage({ analysis, onBack }) {
     vid.play();
     setActiveClip(idx);
   };
+  console.log("snapshotBase64 exists?", !!result?.snapshotBase64, result?.snapshotBase64?.slice?.(0, 30));
 
   return (
     <div style={{ flex: 1, overflow: "auto", background: C.bg, fontFamily: font, overscrollBehavior: "contain" }}>
@@ -69,6 +70,36 @@ export function ResultsPage({ analysis, onBack }) {
             ))}
           </div>
         </div>
+              {result.snapshotBase64 && (
+        <div style={{ width: "100%", maxWidth: 720 }}>
+          <p
+            style={{
+              fontSize: 18,
+              fontWeight: 800,
+              marginBottom: 14,
+              color: C.textPrimary,
+            }}
+          >
+            Detected Frame
+          </p>
+
+          <div style={card({ padding: 16, overflow: "hidden" })}>
+            <img
+              src={result.snapshotBase64}
+              alt="Detected incident frame"
+              style={{
+                width: "100%",
+                display: "block",
+                borderRadius: 10,
+                border: `1px solid ${C.border}`,
+                maxHeight: 420,
+                objectFit: "contain",
+                background: "#000",
+              }}
+            />
+          </div>
+        </div>
+      )}
 
         {/* Incident Clips */}
         {incidentSegs.length > 0 && (

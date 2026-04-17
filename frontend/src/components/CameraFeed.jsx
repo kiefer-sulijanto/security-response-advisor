@@ -1,29 +1,40 @@
-import { useState, useRef, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { C, card } from "../constants/colors";
 import { Spinner } from "./ui";
+import { api } from "../services/api";
 
 export function CameraFeed({ cam }) {
   const videoRef = useRef(null);
+  const imageRef = useRef(null);
+  const canvasRef = useRef(null);
+  const processingRef = useRef(false);
 
   const [camStatus, setCamStatus] = useState("connecting");
   const [errorMsg, setErrorMsg] = useState("");
 
   useEffect(() => {
     let stream = null;
+    let timer = null;
     let stopped = false;
 
     async function connect() {
       setCamStatus("connecting");
       setErrorMsg("");
 
-      if (cam.source === "device") {
-        try {
+      try {
+        if (cam.source === "device") {
           const devices = await navigator.mediaDevices.enumerateDevices();
           const videoDevices = devices.filter((d) => d.kind === "videoinput");
-          const deviceId = videoDevices[cam.deviceIndex]?.deviceId;
+          const selectedDevice = videoDevices[cam.deviceIndex];
+
+          if (!selectedDevice) {
+            throw new Error(
+              `No video device found for ${cam.id} at index ${cam.deviceIndex}. Found only ${videoDevices.length} video device(s).`
+            );
+          }
 
           stream = await navigator.mediaDevices.getUserMedia({
-            video: deviceId ? { deviceId: { exact: deviceId } } : true,
+            video: { deviceId: { exact: selectedDevice.deviceId } },
             audio: false,
           });
 
@@ -35,41 +46,120 @@ export function CameraFeed({ cam }) {
           }
 
           setCamStatus("live");
-        } catch (err) {
-          setCamStatus("error");
-          setErrorMsg(
-            err.name === "NotAllowedError"
-              ? "Camera permission denied"
-              : err.name === "NotFoundError"
-              ? "Camera not found"
-              : `Error: ${err.message}`
-          );
-        }
-      } else if (cam.source === "stream" || cam.source === "rtsp") {
-        if (!cam.streamUrl) {
+          startProcessing("video");
+        } else if (cam.source === "stream") {
+          if (!cam.streamUrl || !imageRef.current) {
+            setCamStatus("no-url");
+            return;
+          }
+
+          imageRef.current.crossOrigin = "anonymous";
+
+          imageRef.current.onload = () => {
+            if (stopped) return;
+            setCamStatus("live");
+            startProcessing("image");
+          };
+
+          imageRef.current.onerror = () => {
+            setCamStatus("error");
+            setErrorMsg("Stream unavailable");
+          };
+
+          imageRef.current.src = cam.streamUrl;
+        } else if (cam.source === "placeholder") {
+        if (!cam.videoUrl) {
           setCamStatus("no-url");
           return;
         }
-
-        if (videoRef.current) {
-          videoRef.current.src = cam.streamUrl;
-          videoRef.current
-            .play()
-            .then(() => {
-              if (!stopped) setCamStatus("live");
-            })
-            .catch(() => {
-              setCamStatus("error");
-              setErrorMsg("Stream unavailable");
-            });
+          setCamStatus("live");
+        } else if (cam.source === "rtsp") {
+          setCamStatus("error");
+          setErrorMsg("RTSP is not directly supported in browser");
         }
+      } catch (err) {
+        setCamStatus("error");
+        setErrorMsg(
+          err?.name === "NotAllowedError"
+            ? "Camera permission denied"
+            : err?.name === "NotFoundError"
+            ? "Camera not found"
+            : `Error: ${err.message || "Connection failed"}`
+        );
       }
+    }
+
+    function startProcessing(sourceType) {
+      const intervalMs = cam.processingIntervalMs || 1000;
+
+      if (timer) clearInterval(timer);
+
+      timer = setInterval(async () => {
+        if (processingRef.current || !canvasRef.current) return;
+
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+
+        let sourceEl = null;
+        let width = 0;
+        let height = 0;
+
+        if (sourceType === "video") {
+          const video = videoRef.current;
+          if (!video || video.readyState < 2 || !video.videoWidth || !video.videoHeight) return;
+          sourceEl = video;
+          width = video.videoWidth;
+          height = video.videoHeight;
+        } else {
+          const img = imageRef.current;
+          if (!img || !img.naturalWidth || !img.naturalHeight) return;
+          sourceEl = img;
+          width = img.naturalWidth;
+          height = img.naturalHeight;
+        }
+
+        try {
+          processingRef.current = true;
+
+          const targetWidth = 640;
+          const scale = targetWidth / width;
+          const targetHeight = Math.max(1, Math.round(height * scale));
+
+          canvas.width = targetWidth;
+          canvas.height = targetHeight;
+
+          ctx.drawImage(sourceEl, 0, 0, targetWidth, targetHeight);
+
+          let imageBase64;
+          try {
+            imageBase64 = canvas.toDataURL("image/jpeg", 0.7);
+          } catch (err) {
+            console.error(`Camera ${cam.id} canvas export failed:`, err);
+            return;
+          }
+
+          await api.processCctvFrame({
+            image_base64: imageBase64,
+            camera_id: cam.id,
+            location: cam.location,
+            confidence_threshold: 0.5,
+            include_debug: false,
+          });
+        } catch (err) {
+          console.error(`Camera ${cam.id} processing failed:`, err);
+        } finally {
+          processingRef.current = false;
+        }
+      }, intervalMs);
     }
 
     connect();
 
     return () => {
       stopped = true;
+
+      if (timer) clearInterval(timer);
 
       if (stream) {
         stream.getTracks().forEach((t) => t.stop());
@@ -78,6 +168,12 @@ export function CameraFeed({ cam }) {
       if (videoRef.current) {
         videoRef.current.srcObject = null;
         videoRef.current.src = "";
+      }
+
+      if (imageRef.current) {
+        imageRef.current.onload = null;
+        imageRef.current.onerror = null;
+        imageRef.current.src = "";
       }
     };
   }, [cam]);
@@ -114,18 +210,49 @@ export function CameraFeed({ cam }) {
           overflow: "hidden",
         }}
       >
-        <video
-          ref={videoRef}
-          muted
-          playsInline
-          autoPlay
-          style={{
-            width: "100%",
-            height: "100%",
-            objectFit: "cover",
-            display: camStatus === "live" ? "block" : "none",
-          }}
-        />
+        {cam.source === "device" ? (
+          <video
+            ref={videoRef}
+            muted
+            playsInline
+            autoPlay
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              display: camStatus === "live" ? "block" : "none",
+            }}
+          />
+        ) : cam.source === "stream" && cam.streamUrl && camStatus === "live" ? (
+          <img
+            ref={imageRef}
+            src={cam.streamUrl}
+            alt={cam.name}
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              display: "block",
+            }}
+          />
+        ) : cam.source === "placeholder" && cam.videoUrl ? (
+          <video
+            src={cam.videoUrl}
+            autoPlay
+            muted
+            loop
+            playsInline
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              display: "block",
+            }}
+          />
+        ) :
+        (
+          <img ref={imageRef} alt="" style={{ display: "none" }} />
+        )}
 
         {camStatus !== "live" && (
           <div
@@ -145,13 +272,9 @@ export function CameraFeed({ cam }) {
                   Connecting to camera…
                 </p>
               </>
-            ) : camStatus === "no-url" ? (
-              <p style={{ fontSize: 11, color: C.textMuted, margin: 0 }}>
-                No stream URL configured.
-              </p>
             ) : (
-              <p style={{ fontSize: 11, color: C.red, margin: 0 }}>
-                {errorMsg || "Connection failed"}
+              <p style={{ fontSize: 11, color: camStatus === "no-url" ? C.textMuted : C.red, margin: 0 }}>
+                {camStatus === "no-url" ? "No stream URL configured." : errorMsg || "Connection failed"}
               </p>
             )}
           </div>
@@ -178,7 +301,6 @@ export function CameraFeed({ cam }) {
                 borderRadius: "50%",
                 background: C.red,
                 display: "inline-block",
-                animation: "pulse 1.5s ease-in-out infinite",
               }}
             />
             <span
@@ -219,11 +341,9 @@ export function CameraFeed({ cam }) {
         }}
       >
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div>
-            <p style={{ fontSize: 13, fontWeight: 700, color: C.textPrimary, margin: 0 }}>
-              {cam.name}
-            </p>
-          </div>
+          <p style={{ fontSize: 13, fontWeight: 700, color: C.textPrimary, margin: 0 }}>
+            {cam.name}
+          </p>
 
           <span
             style={{
@@ -256,6 +376,8 @@ export function CameraFeed({ cam }) {
           </span>
         </div>
       </div>
+
+      <canvas ref={canvasRef} style={{ display: "none" }} />
     </div>
   );
 }

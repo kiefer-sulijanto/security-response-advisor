@@ -56,7 +56,7 @@ def certis_incident_analysis(input_data):
 
     try:
         response = client.chat.completions.create(
-            model="o3-mini",
+            model="o4-mini",
             response_format={"type": "json_object"},
             messages=[
                 {"role": "system", "content": system_prompt},

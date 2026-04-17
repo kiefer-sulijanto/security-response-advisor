@@ -133,7 +133,27 @@ VITE_API_BASE=http://<YOUR_LAPTOP_IP>:8000/api
 > Run `ipconfig getifaddr en0` on Mac or `ipconfig` on Windows to find it.  
 > This allows phone cameras and other devices on the same network to reach the backend.
 
-### 3. Run the backend (Terminal 1)
+### 3. Camera Streams
+
+The dashboard supports multiple live camera feeds using stream URLs.
+
+For the current demo setup, phone cameras are connected through DroidCam over the same Wi-Fi network, and each camera feed is configured with its own URL in the frontend camera configuration.
+
+Example:
+```
+{ id: "cam_01", name: "Cam 1", location: "main_lobby", source: "stream", streamUrl: "http://<PHONE_IP>:4747/video", processingIntervalMs: 1000 }
+```
+Notes:
+
+- Each phone must be connected to the same Wi-Fi network as the laptop running the dashboard.
+- Each phone must have a unique IP address.
+
+The stream URL format used in this project is:
+```
+http://<PHONE_IP>:4747/video
+```
+
+### 4. Run the backend (Terminal 1)
 
 ```bash
 cd backend
@@ -152,7 +172,7 @@ uvicorn server:app --host 0.0.0.0 --port 8000
 
 Confirm backend is running: `http://localhost:8000/health`
 
-### 4. Run the frontend — Supervisor Dashboard (Terminal 2)
+### 5. Run the frontend — Supervisor Dashboard (Terminal 2)
 
 ```bash
 cd frontend
@@ -162,7 +182,7 @@ npm run dev -- --host
 
 Open `http://localhost:5173`
 
-### 5. Run the ground officer app (Terminal 3)
+### 6. Run the ground officer app (Terminal 3)
 
 ```bash
 cd ground-officer
@@ -172,7 +192,7 @@ npm run dev -- --host
 
 Open `http://localhost:5174` — or access from a phone on the same network.
 
-### 6. Run the demo trigger (Terminal 4)
+### 7. Run the demo trigger (Terminal 4)
 
 ```bash
 cd demo-trigger

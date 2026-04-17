@@ -85,7 +85,7 @@ export function LoginPage({ onLogin }) {
         <div>
           <div style={{ fontSize: 22, fontWeight: 800, color: "#F07820", letterSpacing: 3, lineHeight: 1.2 }}>CERTIS</div>
           <div style={{ fontSize: 11, fontWeight: 600, color: "#555960", letterSpacing: 1.5, textTransform: "uppercase", marginTop: 3 }}>
-            AI Command Centre
+            Command Centre
           </div>
         </div>
       </div>

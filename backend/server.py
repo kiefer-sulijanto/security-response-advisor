@@ -62,6 +62,7 @@ officers_db: list[dict] = [
 
 INITIAL_OFFICERS_DB = copy.deepcopy(officers_db)
 
+latest_cctv_snapshots = {}
 incidents_db: list[dict] = []
 dispatches_db: list[dict] = []
 reports_db: list[dict] = []
@@ -221,6 +222,32 @@ class ManualEventRequest(BaseModel):
 # Helpers
 # ---------------------------------------------------------------------------
 
+def _cache_latest_cctv_snapshot(camera_id: str | None, location: str | None, snapshot_base64: str | None):
+    if not camera_id or not location or not snapshot_base64:
+        return
+
+    latest_cctv_snapshots[(camera_id, location)] = {
+        "snapshot_base64": snapshot_base64,
+        "timestamp": datetime.now(),
+    }
+
+def _get_latest_cctv_snapshot(camera_id: str | None, location: str | None, max_age_seconds: int = 60):
+    if not camera_id or not location:
+        return None
+
+    entry = latest_cctv_snapshots.get((camera_id, location))
+    if not entry:
+        return None
+
+    ts = entry.get("timestamp")
+    if not ts:
+        return None
+
+    if datetime.now() - ts > timedelta(seconds=max_age_seconds):
+        return None
+
+    return entry.get("snapshot_base64")
+
 def _normalize_flag(flag: str) -> str:
     return (flag or "green").lower()
 
@@ -272,6 +299,17 @@ def _persist_pipeline_results(results: list[dict], source_name: str, snapshot_ba
 
         incident_timestamp = _parse_iso_timestamp(incident_timestamp_str) or datetime.now()
 
+        camera_id = None
+        for event in incident_data.get("triggering_events", []):
+            metadata = event.get("metadata", {}) or {}
+            if metadata.get("camera_id"):
+                camera_id = metadata["camera_id"]
+                break
+        
+        effective_snapshot = snapshot_base64
+        if not effective_snapshot:
+            effective_snapshot = _get_latest_cctv_snapshot(camera_id, incident_location)
+
         is_duplicate = False
         for existing in reversed(incidents_db):
             if existing.get("incidentType") != incident_name:
@@ -310,7 +348,7 @@ def _persist_pipeline_results(results: list[dict], source_name: str, snapshot_ba
             "status": "open",
             "assignedTo": None,
             "createdAt": incident_timestamp.isoformat(),
-            "snapshot_base64": snapshot_base64,
+            "snapshot_base64": effective_snapshot,
         }
 
         incidents_db.append(incident)
@@ -549,7 +587,7 @@ def pipeline_cctv(req: CCTVDetectionRequest):
     }
 
     results = pipeline.process_cctv_input(raw_detection)
-    created = _persist_pipeline_results(results, "CCTV Pipeline")
+    created = _persist_pipeline_results(results, "CCTV Pipeline",snapshot_base64=req.image_base64)
 
     return {
         "results": results,
@@ -563,6 +601,8 @@ def pipeline_cctv_frame(req: CCTVFrameRequest):
         frame = _decode_base64_image(req.image_base64)
     except (ValueError, TypeError, base64.binascii.Error) as e:
         raise HTTPException(status_code=400, detail=f"Invalid frame payload: {str(e)}")
+
+    _cache_latest_cctv_snapshot(req.camera_id, req.location, req.image_base64)
 
     timestamp_override = req.timestamp
     if not timestamp_override and req.frame_timestamp_seconds is not None:

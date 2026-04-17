@@ -134,6 +134,7 @@ function aggregateFrameResults(frameResults, options = {}) {
     frameResults,
     advisory: worst.advisory,
     incidentData: worst.incidentData,
+    snapshotBase64: worst.snapshotBase64 || null,
     stoppedEarly: !!options.stoppedEarly,
     stopReason: options.stopReason || null,
   };
@@ -165,7 +166,11 @@ export async function runPipelineMultiFrameAnalysis(frames, meta = {}) {
       include_debug: true,
     });
 
-    const normalized = normalizeFrameResult(response, { timestamp });
+    const normalized = {
+      ...normalizeFrameResult(response, { timestamp }),
+      snapshotBase64: imageBase64,
+    };
+
     responses.push(normalized);
 
     const incidentName = normalized?.incidentData?.name || null;

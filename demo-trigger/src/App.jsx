@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { api } from "./services/api";
 
-const locations = ["server_room", "lobby"];
+const locations = ["server_room", "lobby", "room_A", "room_B", "room_C", "carpark_b1", "east_wing", "loading_bay"];
 
 export default function App() {
   const [location, setLocation] = useState("server_room");
