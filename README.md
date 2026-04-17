@@ -296,7 +296,7 @@ security-response-advisor/
 |------|------|---------------|
 | **Kiefer** *(Team Lead)* | Project Lead, Data Engineer, Full-Stack | Led project management and overall direction. Collected and labelled the training dataset across 3 categories: normal, intrusion/unauthorized, and fighting footage. Built the Ground Officer app and the API server connecting it to the frontend. |
 | **Merrick** | Backend Engineer | Built the video upload pipeline, demo trigger app, and live streaming analysis — enabling real-time incident detection via phone camera and laptop/webcam. |
-| **Fernando** | Frontend Engineer | Built the supervisor dashboard UI and integrated the live camera feed components. |
+| **Firnando** | Frontend Engineer | Built the supervisor dashboard UI and integrated the live camera feed components. |
 | **Teddy** | AI Integration Engineer | Integrated the OpenAI API and designed the analysis output logic — incident descriptions, flag classification (Green/Yellow/Red), and recommended actions after analysis. |
 | **Kenneth** | ML & Integration Engineer | Built the incident detection logic on top of the collected dataset, assisted with backend development, and served as the key integrator combining all components. |
 
