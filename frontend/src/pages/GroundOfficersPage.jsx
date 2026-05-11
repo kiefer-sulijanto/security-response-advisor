@@ -226,8 +226,8 @@ export function GroundOfficersPage({ groundOfficers, dispatches, incidents, onDi
                     borderBottom: i < arr.length - 1 ? `1px solid ${C.border}` : "none",
                   }}>
                     <div style={{ width: 34, height: 34, borderRadius: 10, flexShrink: 0,
-                      background: PRIO_DIM[d.priority], display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15 }}>
-                      {PRIO_ICON[d.priority]}
+                      background: PRIO_DIM[d.priority ?? "high"], display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15 }}>
+                      {PRIO_ICON[d.priority ?? "high"]}
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 13, fontWeight: 600, color: C.textPrimary }}>
@@ -239,9 +239,9 @@ export function GroundOfficersPage({ groundOfficers, dispatches, incidents, onDi
                         WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
                         {d.instruction}
                       </div>
-                      <div style={{ fontSize: 11, color: C.textMuted, marginTop: 3 }}>{d.timestamp}</div>
+                      <div style={{ fontSize: 11, color: C.textMuted, marginTop: 3 }}>{d.timestamp ?? d.createdAt}</div>
                     </div>
-                    <Badge sev={d.priority === "critical" ? "critical" : d.priority === "high" ? "warning" : "info"} />
+                    <Badge sev={(d.priority ?? "high") === "critical" ? "critical" : (d.priority ?? "high") === "high" ? "warning" : "info"} />
                   </div>
                 );
               })

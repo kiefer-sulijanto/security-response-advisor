@@ -58,8 +58,8 @@ def pipeline(rules_file):
         rules_file=rules_file,
         enable_advisory=False,
     )
-    p.zone_presence_config["distance_threshold"] = 80.0
-    p.zone_presence_config["exit_grace_seconds"] = 3
+    p.zone_presence.config["distance_threshold"] = 80.0
+    p.zone_presence.config["exit_grace_seconds"] = 3
     return p
 
 

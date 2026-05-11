@@ -1,0 +1,6 @@
+from .incident import router as incident_router
+from .officers import router as officers_router
+from .dispatches import router as dispatches_router
+from .reports import router as reports_router
+from .pipeline_routes import router as pipeline_router
+from .demo import router as demo_router

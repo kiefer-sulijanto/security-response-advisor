@@ -60,9 +60,9 @@ def pipeline(rules_file):
         rules_file=rules_file,
         enable_advisory=False,
     )
-    p.loitering_config["dwell_seconds"] = 10
-    p.loitering_config["distance_threshold"] = 80.0
-    p.loitering_config["cooldown_seconds"] = 30
+    p.loitering.config["dwell_seconds"] = 10
+    p.loitering.config["distance_threshold"] = 80.0
+    p.loitering.config["cooldown_seconds"] = 30
     return p
 
 
