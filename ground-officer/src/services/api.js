@@ -8,7 +8,7 @@ async function req(method, path, body) {
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.error || `HTTP ${res.status}`);
+    throw new Error(err.detail || err.error || `HTTP ${res.status}`);
   }
   return res.json();
 }
