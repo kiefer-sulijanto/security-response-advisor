@@ -133,6 +133,7 @@ class PipelineService:
             debug = {
                 **inference.get("debug", {}),
                 "direct_detection_count": len(raw_detections),
+                "multiple_person_detection_count": len(multi_detections),
                 "loitering_detection_count": len(loitering_detections),
             }
 
@@ -247,3 +248,6 @@ class PipelineService:
         self.loitering.clear()
         self.zone_presence.clear()
         self.multiple_persons.clear()
+        for extractor in self.extractors.values():
+            if hasattr(extractor, "fight_classifier") and extractor.fight_classifier:
+                extractor.fight_classifier.reset()
