@@ -56,6 +56,7 @@ Rule-based correlation engine that fuses multiple signals into structured incide
 | `tailgating` | Access granted + multiple persons detected | 
 | `panic_button` | Emergency distress signal triggered | 
 | `fire_detected` | Smoke/fire event reported |
+| `physical_altercation` | Fight detection model confirms fighting/aggressive behaviour |
 
 ### AI-Powered Advisory (OpenAI)
 Each detected incident is analysed by an AI advisor that outputs:
@@ -123,6 +124,7 @@ FRONTEND_ORIGINS=http://localhost:5173,http://localhost:5174,http://localhost:51
 **`ground-officer/.env`**
 ```env
 VITE_API_BASE=http://<YOUR_LAPTOP_IP>:8000/api
+```
 
 **`demo-trigger/.env`**
 ```env
