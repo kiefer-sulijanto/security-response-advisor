@@ -7,3 +7,4 @@ opencv-python
 numpy
 ultralytics
 pytest
+requests

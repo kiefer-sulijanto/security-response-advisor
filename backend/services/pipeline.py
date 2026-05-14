@@ -249,5 +249,5 @@ class PipelineService:
         self.zone_presence.clear()
         self.multiple_persons.clear()
         for extractor in self.extractors.values():
-            if hasattr(extractor, "fight_classifier") and extractor.fight_classifier:
-                extractor.fight_classifier.reset()
+            if hasattr(extractor, "fight_detection_service"):
+                extractor.fight_detection_service.reset()
