@@ -33,6 +33,7 @@ CCTV / Video Upload / Live Stream
 | `frontend` | React dashboard — supervisor control room | `5173` |
 | `ground-officer` | React app — dispatch view for ground officers | `5174` |
 | `demo-trigger` | React app — manual event trigger for demos | `5175` |
+| `fight-ai-service` | FastAPI service — video-based fight classification | `9000` |
 
 ---
 
@@ -155,7 +156,52 @@ The stream URL format used in this project is:
 http://<PHONE_IP>:4747/video
 ```
 
-### 4. Run the backend (Terminal 1)
+### 4. Fight AI Service / Fight Detection Modes
+
+Fight detection can run in three modes:
+
+```
+# off    = disable fight detection
+# local  = use a local fight classifier model
+# remote = send recent CCTV frames to a separate Fight AI service
+FIGHT_DETECTION_MODE=off
+```
+
+For the current demo setup, `remote` mode is recommended because the video-based fight model can be run on another laptop to reduce load on the main backend laptop.
+
+Backend `.env` example for remote mode:
+```
+FIGHT_DETECTION_MODE=remote
+FIGHT_CLASSIFIER_URL=http://<AI_LAPTOP_IP>:9000/predict-fight-clip
+FIGHT_CLIP_FRAME_COUNT=16
+FIGHT_REMOTE_TIMEOUT_SECONDS=8
+```
+The trained fight detection model is not committed to GitHub due to file size. Download the model folder from the shared Google Drive link and place it at:
+
+```text
+fight_ai_service/models
+```
+
+
+Run the Fight AI service:
+```
+cd fight_ai_service
+venv\Scripts\activate
+uvicorn fight_api:app --host 0.0.0.0 --port 9000
+```
+
+For local testing on the same laptop:
+```
+FIGHT_CLASSIFIER_URL=http://127.0.0.1:9000/predict-fight-clip
+```
+
+
+
+See `fight_ai_service/README.md` for full setup details and model placement instructions.
+
+
+
+### 5. Run the backend (Terminal 1)
 
 ```bash
 cd backend
@@ -174,7 +220,7 @@ uvicorn server:app --host 0.0.0.0 --port 8000
 
 Confirm backend is running: `http://localhost:8000/health`
 
-### 5. Run the frontend — Supervisor Dashboard (Terminal 2)
+### 6. Run the frontend — Supervisor Dashboard (Terminal 2)
 
 ```bash
 cd frontend
@@ -184,7 +230,7 @@ npm run dev -- --host
 
 Open `http://localhost:5173`
 
-### 6. Run the ground officer app (Terminal 3)
+### 7. Run the ground officer app (Terminal 3)
 
 ```bash
 cd ground-officer
@@ -194,7 +240,7 @@ npm run dev -- --host
 
 Open `http://localhost:5174` — or access from a phone on the same network.
 
-### 7. Run the demo trigger (Terminal 4)
+### 8. Run the demo trigger (Terminal 4)
 
 ```bash
 cd demo-trigger
@@ -262,9 +308,12 @@ Open `http://localhost:5175` — or access from a phone on the same network.
 ```
 security-response-advisor/
 ├── backend/
-│   ├── server.py                  # FastAPI app, endpoints, camera registry
+│   ├── server.py                  # FastAPI app
 │   ├── services/
-│   │   └── pipeline.py            # Main pipeline orchestrator
+│   │   ├── pipeline.py            # Main pipeline orchestrator
+│   │   ├── fight_detection_service.py
+│   │   ├── remote_fight_classifier.py
+│   │   └── detections/
 │   ├── core/
 │   │   ├── incident_engine.py     # Rule-based incident detection
 │   │   ├── event_stream_processor.py
@@ -280,12 +329,18 @@ security-response-advisor/
 │   │   └── incident_analysis.py   # OpenAI advisory generation
 │   ├── config/
 │   │   └── incident_rules.json    # Incident detection rules
+│   │   └── cameras.py
 │   ├── models/
 │   │   └── yolov8n.pt             # YOLOv8 nano model weights
 │   └── requirements.txt
 ├── frontend/                      # Supervisor dashboard (port 5173)
 ├── ground-officer/                # Officer dispatch app (port 5174)
-└── demo-trigger/                  # Manual event trigger (port 5175)
+├── demo-trigger/                  # Manual event trigger (port 5175)
+├── fight_ai_service/
+│   ├──fight_api.py
+│   ├──requirements.txt
+│   ├──README.md
+│   ├──models/
 ```
 
 ---
@@ -320,5 +375,5 @@ Security events often unfold over time. A 120-second correlation window allows t
 ## Notes
 
 - All data is stored **in-memory**. Restarting the backend clears all incidents, dispatches, and reports. Use `/api/demo/reset` for a clean demo state without restarting.
-- The YOLO model (`yolov8n.pt`) detects persons only. Restricted zone polygons are configured per camera in `backend/server.py`.
+- The YOLO model (`yolov8n.pt`) detects persons only. Restricted zone polygons and camera metadata are configured in `backend/config/cameras.py`.
 - The `demo-trigger` app must use the backend host IP (not `localhost`) if accessed from a phone or separate device.
