@@ -223,13 +223,6 @@ class IncidentEngine:
         except (AttributeError, TypeError, ValueError):
             return []
         
-    def _within_time_window(self, selected_events, time_window):
-        try:
-            timestamps = sorted(event.timestamp for event in selected_events)
-            return (timestamps[-1] - timestamps[0]) <= timedelta(seconds=int(time_window))
-        except (AttributeError, TypeError, ValueError):
-            return False
-
     def _build_incident_signature(self, incident_name, matching_events):
         try:
             first_event = matching_events[0] if matching_events else None

@@ -2,41 +2,49 @@
   "intrusion_attempt": {
     "events": ["person_detected", "access_denied"],
     "time_window": 60,
+    "base_risk": 7,
     "description": "Possible unauthorized entry attempt"
   },
   "unauthorized_access": {
     "events": ["restricted_area_entry"],
     "time_window": 60,
+    "base_risk": 6,
     "description": "Person entered restricted area"
   },
   "loitering": {
     "events": ["loitering_detected"],
     "time_window": 60,
+    "base_risk": 2,
     "description": "Person loitering in monitored area"
   },
   "after_hours_presence": {
     "events": ["person_detected", "after_hours_presence"],
     "time_window": 60,
+    "base_risk": 5,
     "description": "Person detected in monitored area during restricted hours"
   },
   "tailgating": {
     "events": ["access_granted", "multiple_persons_detected"],
     "time_window": 10,
+    "base_risk": 5,
     "description": "Possible tailgating through controlled entry"
   },
   "emergency_distress": {
     "events": ["panic_button"],
     "time_window": 10,
+    "base_risk": 10,
     "description": "Emergency panic alert triggered"
   },
   "fire_alert": {
     "events": ["smoke_detected"],
     "time_window": 30,
+    "base_risk": 10,
     "description": "Possible fire detected"
   },
   "physical_altercation": {
-  "events": ["fight_detected"],
-  "time_window": 10,
-  "description": "Possible physical fight or aggressive confrontation detected"
-}
+    "events": ["fight_detected"],
+    "time_window": 10,
+    "base_risk": 9,
+    "description": "Possible physical fight or aggressive confrontation detected"
+  }
 }

@@ -53,6 +53,8 @@ class ZonePresenceDetector:
 
             if not matched_existing:
                 filtered.append(detection)
+            else:
+                filtered.append({**detection, "in_restricted_area": False})
 
         if current_inside_centers:
             state["inside_tracks"] = current_inside_centers
