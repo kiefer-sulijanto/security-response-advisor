@@ -73,6 +73,7 @@ def extractor(monkeypatch):
             return []
 
     monkeypatch.setattr("extractors.cctv_extractor.YOLO", DummyYOLO)
+    monkeypatch.setenv("FIGHT_DETECTION_MODE", "off")
 
     ext = CCTVExtractor(
         model_path="dummy.pt",
