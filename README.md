@@ -118,8 +118,12 @@ cd security-response-advisor
 **`backend/.env`**
 ```env
 OPENAI_API_KEY=sk-...
+OPENAI_MODEL=gpt-4.1-mini
 
 FRONTEND_ORIGINS=http://localhost:5173,http://localhost:5174,http://localhost:5175,http://<YOUR_LAPTOP_IP>:5173,http://<YOUR_LAPTOP_IP>:5174,http://<YOUR_LAPTOP_IP>:5175
+
+# Secret token required to call POST /api/demo/reset (set any string you like)
+DEMO_RESET_SECRET=certis_demo_2026
 ```
 
 **`ground-officer/.env`**
@@ -130,6 +134,9 @@ VITE_API_BASE=http://<YOUR_LAPTOP_IP>:8000/api
 **`demo-trigger/.env`**
 ```env
 VITE_API_BASE=http://<YOUR_LAPTOP_IP>:8000/api
+
+# Must match DEMO_RESET_SECRET in backend/.env
+VITE_DEMO_RESET_SECRET=certis_demo_2026
 ```
 
 > Replace `<YOUR_LAPTOP_IP>` with your local network IP (e.g. `192.168.1.10`).  
@@ -299,7 +306,7 @@ Open `http://localhost:5175` — or access from a phone on the same network.
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | `POST` | `/api/analyze` | Run AI advisory on a given incident |
-| `POST` | `/api/demo/reset` | Reset all in-memory state for demos |
+| `POST` | `/api/demo/reset` | Reset all in-memory state for demos — requires `X-Demo-Secret` header matching `DEMO_RESET_SECRET` |
 
 ---
 
