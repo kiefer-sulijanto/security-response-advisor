@@ -85,7 +85,7 @@ class FightDetectionService:
             return result
 
         if person_count < 2:
-            self.reset()
+            self.frame_buffer.clear()
             result = self._empty_result(mode=self.mode, source="not_enough_people")
             return result
 

@@ -52,6 +52,7 @@ def normalize_frame_count(frames: list[np.ndarray], target_count: int = NUM_FRAM
         indices = np.linspace(0, len(frames) - 1, target_count).astype(int)
         return [frames[i] for i in indices]
 
+    frames = list(frames)
     while len(frames) < target_count:
         frames.append(frames[-1])
 
