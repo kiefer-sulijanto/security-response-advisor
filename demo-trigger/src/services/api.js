@@ -1,13 +1,16 @@
 const BASE = import.meta.env.VITE_API_BASE || "http://localhost:8000/api";
 
-async function req(method, path, body) {
+async function req(method, path, body, extraHeaders = {}) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 10000);
 
   try {
     const res = await fetch(`${BASE}${path}`, {
       method,
-      headers: body ? { "Content-Type": "application/json" } : {},
+      headers: {
+        ...(body ? { "Content-Type": "application/json" } : {}),
+        ...extraHeaders,
+      },
       body: body ? JSON.stringify(body) : undefined,
       signal: controller.signal,
     });
@@ -31,5 +34,7 @@ async function req(method, path, body) {
 export const api = {
   processAccessLog: (data) => req("POST", "/pipeline/access", data),
   manualTrigger: (data) => req("POST", "/pipeline/manual-event", data),
-  resetDemoState: () => req("POST", "/demo/reset"),
+  resetDemoState: () => req("POST", "/demo/reset", null, {
+    "X-Demo-Secret": import.meta.env.VITE_DEMO_RESET_SECRET || "",
+  }),
 };
