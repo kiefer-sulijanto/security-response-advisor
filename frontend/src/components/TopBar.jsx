@@ -1,6 +1,14 @@
+import { useEffect, useState } from "react";
 import { C } from "../constants/colors";
 
 export function TopBar({ title, subtitle, criticalCount }) {
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
   return (
     <div style={{
       position: "sticky", top: 0, zIndex: 10,
@@ -46,10 +54,10 @@ export function TopBar({ title, subtitle, criticalCount }) {
           background: C.surface, border: `1px solid ${C.border}`,
         }}>
           <span style={{ fontSize: 13, fontWeight: 700, color: C.textPrimary, lineHeight: 1.3 }}>
-            {new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+            {now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
           </span>
           <span style={{ fontSize: 10, color: C.textMuted, letterSpacing: ".3px" }}>
-            {new Date().toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" })}
+            {now.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" })}
           </span>
         </div>
       </div>

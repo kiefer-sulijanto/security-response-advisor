@@ -39,6 +39,13 @@ const inputStyle = {
 export function IncidentsPage({ incidents, groundOfficers = [], analyses = [], onDispatch, onNav }) {
   const [filter,      setFilter]      = useState("all");
   const [dispatchFor, setDispatchFor] = useState(null);
+
+  const openDispatch = (incId) => {
+    setDispatchFor(incId);
+    setSelOfficer("");
+    setInstrText("");
+    setInstrPrio("high");
+  };
   const [expandedId,  setExpandedId]  = useState(null);
   const [selOfficer,  setSelOfficer]  = useState("");
   const [instrText,   setInstrText]   = useState("");
@@ -195,7 +202,7 @@ export function IncidentsPage({ incidents, groundOfficers = [], analyses = [], o
 
                     {/* Actions */}
                     <div style={{ display: "flex", gap: 6 }}>
-                      <button onClick={() => { setDispatchFor(isDispatching ? null : inc.id); setSelOfficer(""); setInstrText(""); }} style={{
+                      <button onClick={() => { isDispatching ? setDispatchFor(null) : openDispatch(inc.id); }} style={{
                         background: isDispatching ? C.greenDim : "transparent",
                         border: `1px solid ${isDispatching ? C.green : C.border}`,
                         color: isDispatching ? C.green : C.textSecondary,

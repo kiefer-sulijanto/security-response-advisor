@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { C } from "./constants/colors";
 import { api } from "./services/api.js";
 import { Sidebar }            from "./components/Sidebar";
@@ -22,6 +22,7 @@ export default function App() {
   const [dispatches, setDispatches]           = useState([]);
   const [goReports, setGoReports]             = useState([]);
   const [backendOnline, setBackendOnline]     = useState(null);  // null=checking, true, false
+  const analysisCountRef = useRef(0);
 
   // Poll backend every 10s for shared state
   const syncFromBackend = useCallback(async () => {
@@ -50,7 +51,8 @@ export default function App() {
 
   const handleAnalysisComplete = async ({ videoUrl, filename, result }) => {
     const time = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-    const id = `ANA-${String(analyses.length + 1).padStart(4, "0")}`;
+    analysisCountRef.current += 1;
+    const id = `ANA-${String(analysisCountRef.current).padStart(4, "0")}`;
     const entry = { id, filename, time, videoUrl, result };
 
     setAnalyses(prev => [...prev, entry]);
@@ -97,7 +99,16 @@ export default function App() {
     if (page === "shift")
       return <ShiftReportPage analyses={analyses} incidents={incidents} dispatches={dispatches}
                goReports={goReports} criticalCount={criticalCount}
-               onLogout={() => { setLoggedIn(false); setPage("dashboard"); }} />;
+               onLogout={() => {
+                 setLoggedIn(false);
+                 setPage("dashboard");
+                 setAnalyses([]);
+                 setCurrentAnalysis(null);
+                 setIncidents([]);
+                 setGroundOfficers([]);
+                 setDispatches([]);
+                 setGoReports([]);
+               }} />;
     return <DashboardPage onNav={setPage} analyses={analyses} incidents={incidents}
              groundOfficers={groundOfficers} dispatches={dispatches} />;
   };

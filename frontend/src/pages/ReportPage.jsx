@@ -85,7 +85,11 @@ function generateExport(format, { analyses, incidents, dispatches, groundOfficer
 function triggerDownload(blob, filename) {
   const url = URL.createObjectURL(blob);
   const a   = document.createElement("a");
-  a.href = url; a.download = filename; a.click();
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
 
@@ -480,8 +484,12 @@ export function ReportPage({ analyses, incidents, dispatches, groundOfficers, cr
                     key={fmt.id}
                     onClick={() => {
                       setShowPicker(false);
-                      generateExport(fmt.id, { analyses, incidents, dispatches, groundOfficers, goReports, notes });
-                      setFinalized(true);
+                      try {
+                        generateExport(fmt.id, { analyses, incidents, dispatches, groundOfficers, goReports, notes });
+                        setFinalized(true);
+                      } catch (err) {
+                        console.error("Export failed:", err);
+                      }
                     }}
                     style={{
                       width: "100%", display: "flex", alignItems: "center", gap: 10,
