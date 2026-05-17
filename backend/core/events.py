@@ -47,7 +47,7 @@ def create_event(
     try:
         parsed_confidence = float(confidence)
     except (TypeError, ValueError):
-        parsed_confidence = 1.0
+        parsed_confidence = 0.0
 
     if not isinstance(timestamp, datetime):
         timestamp = datetime.now()

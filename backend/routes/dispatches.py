@@ -30,8 +30,8 @@ def create_dispatch(req: CreateDispatchRequest):
             break
 
     linked_incident = next((i for i in state.incidents_db if i["id"] == req.incidentId), None)
-    incident_type = linked_incident["incidentType"] if linked_incident else req.incidentId
-    incident_location = linked_incident["location"] if linked_incident else req.location
+    incident_type = linked_incident.get("incidentType", req.incidentId) if linked_incident else req.incidentId
+    incident_location = linked_incident.get("location", req.location) if linked_incident else req.location
 
     now = datetime.now()
     dispatch = {
@@ -66,7 +66,7 @@ def update_dispatch(dispatch_id: str, req: UpdateDispatchRequest):
             elif req.status == "resolved":
                 for officer in state.officers_db:
                     if officer["id"] == dispatch["officerId"]:
-                        officer["status"] = "patrolling"
+                        officer["status"] = "standby"
                         break
                 for incident in state.incidents_db:
                     if incident["id"] == dispatch.get("incidentId"):
