@@ -17,8 +17,10 @@ export default function HomePage({ officer, alerts, tasks, reports, onNavigate, 
   const tasksPending = tasks.filter(t => !t.done).length
   const recentReports = reports.slice(0, 3)
 
-  // Latest unread instruction from Command Center
-  const latestInstruction = alerts.find(a => a.status === 'unread')
+  // Latest unread instruction from Command Center — newest first
+  const latestInstruction = [...alerts]
+    .sort((a, b) => (b.timestamp > a.timestamp ? 1 : -1))
+    .find(a => a.status === 'unread')
 
   return (
     <>
