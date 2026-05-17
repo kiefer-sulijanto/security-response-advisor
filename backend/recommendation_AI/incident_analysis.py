@@ -461,7 +461,7 @@ def certis_incident_analysis(input_data):
 
     try:
         response = client.chat.completions.create(
-            model="o4-mini",
+            model=os.getenv("OPENAI_MODEL", "o4-mini"),
             response_format={"type": "json_object"},
             messages=[
                 {"role": "system", "content": _SYSTEM_PROMPT},
@@ -500,9 +500,9 @@ def certis_incident_analysis(input_data):
         actions.append(_FALLBACK_ACTIONS[len(actions)])
     advisory["actions"] = actions
 
-    # --- Post-process: ensure all required output keys are present ---
+    # --- Post-process: ensure all required output keys are present and non-empty ---
     for key in _REQUIRED_OUTPUT_KEYS:
-        if advisory.get(key) is None:
+        if not advisory.get(key):
             advisory[key] = [] if key == "actions" else ""
 
     return advisory
