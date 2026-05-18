@@ -5,7 +5,7 @@ from typing import Any
 
 from ultralytics import YOLO
 
-from extractors.fighting_detector import BoundingBox, FightingDetector
+from services.fight_detection_service import FightDetectionService
 
 
 class CCTVExtractor:
@@ -16,6 +16,7 @@ class CCTVExtractor:
         location: str,
         conf_threshold: float = 0.5,
         restricted_zones: dict[str, list[list[tuple[float, float]]]] | None = None,
+        fight_model_path: str | None = "models/fight_classifier.pt",
     ):
         try:
             self.model = YOLO(model_path)
@@ -27,8 +28,9 @@ class CCTVExtractor:
         self.conf_threshold = conf_threshold
         self.restricted_zones = restricted_zones or {}
 
-        # Keep one detector instance per camera extractor so tracking persists across frames
-        self.fighting_detector = FightingDetector()
+        self.fight_detection_service = FightDetectionService(
+            local_model_path=fight_model_path,
+        )
 
     @staticmethod
     def _point_in_polygon(point: tuple[float, float], polygon: list[tuple[float, float]]) -> bool:
@@ -96,7 +98,7 @@ class CCTVExtractor:
 
         detections: list[dict] = []
         debug_results: list[dict] = []
-        fight_boxes: list[BoundingBox] = []
+
 
         for result in results:
             names = result.names
@@ -135,40 +137,41 @@ class CCTVExtractor:
                     detections.append(detection)
                     person_count += 1
 
-                    fight_boxes.append(
-                        BoundingBox(
-                            x1=float(x1),
-                            y1=float(y1),
-                            x2=float(x2),
-                            y2=float(y2),
-                            confidence=confidence,
-                        )
-                    )
 
                 except (AttributeError, TypeError, ValueError, IndexError, KeyError):
                     continue
 
             debug_results.append({"person_count": person_count})
 
-        # Run fight logic on current frame's person boxes
-        fight_result = self.fighting_detector.process_frame(fight_boxes)
+        total_people = sum(item.get("person_count", 0) for item in debug_results)
 
-        if fight_result.get("fighting_detected"):
+        fight_result = self.fight_detection_service.process_frame(
+            frame=frame,
+            camera_id=self.camera_id,
+            person_count=total_people,
+        )
+
+        if fight_result.get("is_fighting"):
             detections.append(
                 {
                     "label": "fighting_or_aggressive",
                     "timestamp": timestamp_value,
                     "location": self.location,
                     "camera_id": self.camera_id,
-                    "confidence": 1.0,
+                    "confidence": fight_result.get("confidence", 1.0),
                     "bbox": None,
                     "center": None,
                     "in_restricted_area": False,
-                    "person_count": fight_result.get("person_count", 0),
-                    "alert_pairs": fight_result.get("alert_pairs", []),
+                    "person_count": total_people,
+                    "fight_class": fight_result.get("class_name"),
+                    "fight_source": fight_result.get("source"),
+                    "fight_mode": fight_result.get("mode"),
+                    "fight_frames_sent": fight_result.get("frames_sent"),
+                    "fight_votes": fight_result.get("fight_votes"),
+                    "fight_window_size": fight_result.get("window_size"),
                 }
             )
-
+        
         return {
             "detections": detections,
             "debug": {
@@ -178,9 +181,18 @@ class CCTVExtractor:
                 "threshold": float(threshold),
                 "results": debug_results,
                 "total_detections": len(detections),
-                "fight_detected": fight_result.get("fighting_detected", False),
-                "fight_alert_pairs": fight_result.get("alert_pairs", []),
-                "tracked_person_count": fight_result.get("person_count", 0),
+                "person_count": total_people,
+                "fight_mode": fight_result.get("mode"),
+                "fight_class": fight_result.get("class_name"),
+                "fight_confidence": fight_result.get("confidence"),
+                "fight_is_fighting": fight_result.get("is_fighting"),
+                "fight_frame_positive": fight_result.get("frame_positive"),
+                "fight_source": fight_result.get("source"),
+                "fight_error": fight_result.get("error"),
+                "fight_frames_sent": fight_result.get("frames_sent"),
+                "fight_buffer_size": fight_result.get("buffer_size"),
+                "fight_votes": fight_result.get("fight_votes"),
+                "fight_window_size": fight_result.get("window_size"),
             },
         }
 

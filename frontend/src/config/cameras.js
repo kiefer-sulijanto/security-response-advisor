@@ -28,11 +28,3 @@ export const CAMERA_CONFIG = [
   { id: "cam_06", name: "Cam 6", location: "loading_bay", source: "placeholder", videoUrl: "/videos/normal_004.mp4" },
 ];
 
-export const NAV = [
-  { id: "dashboard", label: "Dashboard",       icon: "⬛" },
-  { id: "upload",    label: "Analyze",          icon: "⬆" },
-  { id: "cameras",   label: "Cameras",          icon: "◉" },
-  { id: "incidents", label: "Incidents",        icon: "⚠" },
-  { id: "officers",  label: "Ground Officers",  icon: "👮" },
-  { id: "shift",     label: "Shift Report",     icon: "📋" },
-];

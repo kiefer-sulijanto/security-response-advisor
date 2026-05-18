@@ -99,3 +99,14 @@ ground-officer/.vite-temp/
 
 
 *.zip
+
+# Fight AI service
+fight_ai_service/venv/
+fight_ai_service/.venv/
+fight_ai_service/__pycache__/
+fight_ai_service/**/__pycache__/
+fight_ai_service/.pytest_cache/
+fight_ai_service/models/
+fight_ai_service/models/.gitkeep
+fight_ai_service/runs/
+fight_ai_service/checkpoints/

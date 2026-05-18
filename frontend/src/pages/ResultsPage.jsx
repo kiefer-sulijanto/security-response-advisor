@@ -7,7 +7,7 @@ export function ResultsPage({ analysis, onBack }) {
   const videoRef    = useRef(null);
   const [activeClip, setActiveClip] = useState(null);
 
-  const incidentSegs = result.segments.filter(s => s.color !== "#22c55e");
+  const incidentSegs = (result.segments || []).filter(s => s.color !== "#22c55e");
 
   const seekTo = (seg, idx) => {
     const vid = videoRef.current;
@@ -52,7 +52,7 @@ export function ResultsPage({ analysis, onBack }) {
                 vid.currentTime = (pct / 100) * vid.duration;
               }}
             >
-              {result.segments.map((seg, i) => (
+              {(result.segments || []).map((seg, i) => (
                 <div key={i} style={{ position: "absolute", left: `${seg.startPct}%`,
                   width: `${seg.widthPct}%`, height: "100%", background: seg.color, opacity: .9 }} />
               ))}

@@ -29,10 +29,8 @@ class EventType:
     ACCESS_DENIED = "access_denied"
     ACCESS_GRANTED = "access_granted"
     PANIC_BUTTON = "panic_button"
-    DOOR_FORCED_OPEN = "door_forced_open"
     SMOKE_DETECTED = "smoke_detected"
     RESTRICTED_AREA_ENTRY = "restricted_area_entry"
-    INTRUSION_DETECTED = "intrusion_detected"
     FIGHT_DETECTED = "fight_detected"
     AFTER_HOURS_PRESENCE = "after_hours_presence"
     MULTIPLE_PERSONS_DETECTED = "multiple_persons_detected"
@@ -49,7 +47,7 @@ def create_event(
     try:
         parsed_confidence = float(confidence)
     except (TypeError, ValueError):
-        parsed_confidence = 1.0
+        parsed_confidence = 0.0
 
     if not isinstance(timestamp, datetime):
         timestamp = datetime.now()

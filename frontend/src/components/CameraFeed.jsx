@@ -223,16 +223,15 @@ export function CameraFeed({ cam }) {
               display: camStatus === "live" ? "block" : "none",
             }}
           />
-        ) : cam.source === "stream" && cam.streamUrl && camStatus === "live" ? (
+        ) : cam.source === "stream" && cam.streamUrl ? (
           <img
             ref={imageRef}
-            src={cam.streamUrl}
             alt={cam.name}
             style={{
               width: "100%",
               height: "100%",
               objectFit: "cover",
-              display: "block",
+              display: camStatus === "live" ? "block" : "none",
             }}
           />
         ) : cam.source === "placeholder" && cam.videoUrl ? (
@@ -249,10 +248,7 @@ export function CameraFeed({ cam }) {
               display: "block",
             }}
           />
-        ) :
-        (
-          <img ref={imageRef} alt="" style={{ display: "none" }} />
-        )}
+        ) : null}
 
         {camStatus !== "live" && (
           <div

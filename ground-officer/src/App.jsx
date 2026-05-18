@@ -7,9 +7,9 @@ import ReportPage   from './pages/ReportPage.jsx'
 import HandoverPage from './pages/HandoverPage.jsx'
 import BottomNav    from './components/BottomNav.jsx'
 import { INITIAL_TASKS } from './constants/mockData.js'
+import { api } from './services/api.js'
 
 const TASKS_VERSION = '2'  // bump this whenever INITIAL_TASKS changes
-import { api } from './services/api.js'
 
 // Map a backend dispatch object → alert shape used by AlertsPage / HomePage
 function dispatchToAlert(d) {
@@ -78,12 +78,15 @@ export default function App() {
   const unreadAlerts = alerts.filter(a => a.status === 'unread').length
 
   const updateAlertStatus = async (id, status) => {
-    // Optimistic update
+    const previous = alerts.find(a => a.id === id)?.status
     setAlerts(prev => prev.map(a => a.id === id ? { ...a, status } : a))
     try {
       await api.updateDispatch(id, status)
     } catch (err) {
       console.warn('Could not update dispatch status:', err.message)
+      if (previous !== undefined) {
+        setAlerts(prev => prev.map(a => a.id === id ? { ...a, status: previous } : a))
+      }
     }
   }
 

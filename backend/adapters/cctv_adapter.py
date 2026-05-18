@@ -4,7 +4,6 @@ from core.events import EventType, create_event
 
 LABEL_TO_EVENTS = {
     "person": [EventType.PERSON_DETECTED],
-    "intrusion_or_unauthorized": [EventType.INTRUSION_DETECTED],
     "fighting_or_aggressive": [EventType.FIGHT_DETECTED],
     "multiple_persons": [EventType.MULTIPLE_PERSONS_DETECTED],
     "loitering": [EventType.LOITERING_DETECTED],
@@ -13,7 +12,7 @@ LABEL_TO_EVENTS = {
 LOCATION_ALLOWED_HOURS = {
     "server_room": {"start": 8, "end": 18},
     "lobby": {"start": 6, "end": 22},
-    "warehouse": {"start": 7, "end": 20},
+    "main_gate": {"start": 6, "end": 23},
 }
 
 

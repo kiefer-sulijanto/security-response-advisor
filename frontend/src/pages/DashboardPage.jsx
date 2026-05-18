@@ -47,8 +47,8 @@ function CardHeader({ title, action, onAction }) {
 }
 
 export function DashboardPage({ onNav, analyses, incidents, groundOfficers = [], dispatches = [] }) {
-  const criticalCount = analyses.filter(a => a.result?.segments?.some(s => s.color === C.red)).length;
-  const warningCount  = analyses.filter(a => a.result?.segments?.some(s => s.color === C.amber)).length;
+  const criticalCount = analyses.filter(a => a.result?.flag === "red").length;
+  const warningCount  = analyses.filter(a => a.result?.flag === "yellow").length;
   const activeIncidents = incidents.filter(i => i.status !== "resolved");
 
   const [resetLoading, setResetLoading] = useState(false);

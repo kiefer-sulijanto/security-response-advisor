@@ -1,5 +1,5 @@
 import base64
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from fastapi import APIRouter, HTTPException
 
@@ -44,10 +44,8 @@ def pipeline_cctv_frame(req: CCTVFrameRequest):
     _cache_latest_cctv_snapshot(req.camera_id, req.location, req.image_base64)
 
     timestamp_override = req.timestamp
-    if not timestamp_override and req.frame_timestamp_seconds is not None:
-        timestamp_override = (
-            datetime.now() + timedelta(seconds=req.frame_timestamp_seconds)
-        ).isoformat(timespec="seconds")
+    if not timestamp_override:
+        timestamp_override = datetime.now().isoformat(timespec="seconds")
 
     pipeline_output = state.pipeline.process_cctv_frame(
         frame=frame,

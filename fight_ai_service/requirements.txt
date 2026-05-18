@@ -1,0 +1,15 @@
+fastapi
+uvicorn[standard]
+pydantic
+pytest
+
+numpy
+opencv-python
+
+torch
+torchvision
+torchaudio
+
+transformers
+accelerate
+safetensors

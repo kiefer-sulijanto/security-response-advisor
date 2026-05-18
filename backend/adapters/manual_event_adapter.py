@@ -34,8 +34,8 @@ def process_manual_event(raw_input: dict):
     parsed_timestamp = None
     if timestamp:
         try:
-            parsed_timestamp = datetime.fromisoformat(timestamp)
-        except ValueError as e:
+            parsed_timestamp = datetime.fromisoformat(str(timestamp))
+        except (ValueError, TypeError) as e:
             raise ValueError("timestamp must be a valid ISO format string") from e
 
     event = create_event(

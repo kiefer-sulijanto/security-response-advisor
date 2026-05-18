@@ -1,0 +1,76 @@
+from __future__ import annotations
+
+import base64
+import os
+from typing import Any
+
+import cv2
+import requests
+
+
+class RemoteFightClassifier:
+    def __init__(
+        self,
+        api_url: str | None = None,
+        timeout_seconds: float | None = None,
+    ):
+        self.api_url = api_url or os.getenv("FIGHT_CLASSIFIER_URL")
+        self.timeout_seconds = timeout_seconds or float(
+            os.getenv("FIGHT_REMOTE_TIMEOUT_SECONDS", "3")
+        )
+
+    @property
+    def enabled(self) -> bool:
+        return bool(self.api_url)
+
+    @staticmethod
+    def encode_frame(frame: Any) -> str:
+        ok, buffer = cv2.imencode(".jpg", frame)
+
+        if not ok:
+            raise RuntimeError("Failed to encode frame as JPEG")
+
+        return base64.b64encode(buffer).decode("utf-8")
+
+    def predict_clip(self, camera_id: str, frames: list[Any]) -> dict:
+        if not self.enabled:
+            return {
+                "is_fighting": False,
+                "class_name": "disabled",
+                "confidence": 0.0,
+                "source": "remote_disabled",
+            }
+
+        try:
+            frames_base64 = [self.encode_frame(frame) for frame in frames]
+
+            payload = {
+                "camera_id": camera_id,
+                "frames_base64": frames_base64,
+            }
+
+            response = requests.post(
+                self.api_url,
+                json=payload,
+                timeout=self.timeout_seconds,
+            )
+            response.raise_for_status()
+
+            data = response.json()
+
+            return {
+                "is_fighting": bool(data.get("is_fighting", False)),
+                "class_name": data.get("class_name", "unknown"),
+                "confidence": float(data.get("confidence", 0.0)),
+                "source": data.get("source", "remote_fight_classifier"),
+                "raw": data,
+            }
+
+        except Exception as e:
+            return {
+                "is_fighting": False,
+                "class_name": "error",
+                "confidence": 0.0,
+                "source": "remote_fight_classifier",
+                "error": str(e),
+            }

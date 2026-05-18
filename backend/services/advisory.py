@@ -40,7 +40,7 @@ def normalize_advisory(advisory: dict, incident_dict: dict) -> dict:
 def fallback_advisory(incident_dict: dict, reason: str) -> dict:
     return {
         "title": "Analysis Unavailable",
-        "flag": "Green",
+        "flag": "Yellow",
         "location": incident_dict.get("location", "unknown"),
         "dispatch_unit": "Manual Review",
         "expected_response_time": "Routine check (< 1 hour)",
@@ -70,7 +70,7 @@ def pipeline_error(error_type: str, message: str) -> dict:
         },
         "advisory": {
             "title": "Pipeline Error",
-            "flag": "Green",
+            "flag": "Yellow",
             "location": "system",
             "dispatch_unit": "Developer Review",
             "expected_response_time": "As needed",

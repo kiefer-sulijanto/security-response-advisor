@@ -166,12 +166,17 @@ export async function runPipelineMultiFrameAnalysis(frames, meta = {}) {
       include_debug: true,
     });
 
-    const normalized = {
-      ...normalizeFrameResult(response, { timestamp }),
-      snapshotBase64: imageBase64,
-    };
-
+    const normalized = normalizeFrameResult(response, { timestamp });
     responses.push(normalized);
+
+    const currentWorstFlag = responses.reduce(
+      (best, r) => (FLAG_SCORE[r.flag] || 0) > (FLAG_SCORE[best.flag] || 0) ? r : best,
+      responses[0]
+    );
+    if (currentWorstFlag === normalized) {
+      responses.forEach(r => { if (r !== normalized) delete r.snapshotBase64; });
+      normalized.snapshotBase64 = imageBase64;
+    }
 
     const incidentName = normalized?.incidentData?.name || null;
     const incidentFlag = (normalized?.flag || "green").toLowerCase();

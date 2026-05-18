@@ -23,7 +23,7 @@ export default function AlertsPage({ alerts, onUpdateAlertStatus }) {
 
   const filtered = alerts
     .filter(a => filter === 'all' || a.status === filter || a.priority === filter)
-    .sort((a, b) => PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority])
+    .sort((a, b) => (PRIORITY_ORDER[a.priority] ?? 99) - (PRIORITY_ORDER[b.priority] ?? 99))
 
   return (
     <>

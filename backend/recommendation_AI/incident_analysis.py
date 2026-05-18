@@ -3,72 +3,179 @@ import os
 from dotenv import load_dotenv
 from openai import OpenAI
 
+from .advisory_prompt import SYSTEM_PROMPT
+from .advisory_rules import (
+    VALID_FLAGS,
+    REQUIRED_INPUT_KEYS,
+    REQUIRED_OUTPUT_KEYS,
+    FALLBACK_ACTIONS,
+    FLAG_RANK,
+    MINIMUM_SEVERITY,
+    CONCERN_SENTENCES,
+    INCIDENT_RULES,
+    DEFAULT_INCIDENT_RULE,
+)
+
+load_dotenv()
+
+
+def _article(word: str) -> str:
+    return "An" if word[:1].lower() in "aeiou" else "A"
+
+
+def _fallback_advisory(location: str, reason: str) -> dict:
+    """Schema-compliant fallback for pre-validation and setup errors only.
+
+    Used when the input is malformed and a clean incidentType is not available.
+    For post-validation API failures use _rule_based_advisory instead.
+    """
+    return {
+        "title": "Analysis Unavailable",
+        "flag": "Green",
+        "location": location or "unknown",
+        "dispatch_unit": "Manual Review",
+        "expected_response_time": "Routine check (< 1 hour)",
+        "description": reason,
+        "explanation": "Fallback response: AI analysis could not be completed.",
+        "actions": list(FALLBACK_ACTIONS),
+    }
+
+
+def _build_rule_based_description(incident_type: str, location: str, raw_description: str) -> str:
+    """Builds a formal 5-sentence description from rule-based components."""
+    incident_label = incident_type.replace("_", " ") if incident_type else "security incident"
+    s1 = f"{_article(incident_label)} {incident_label} has been reported at {location}."
+    s2 = raw_description if raw_description else "No additional event detail was provided in the source data."
+    s3 = CONCERN_SENTENCES.get(
+        incident_type,
+        "The nature and extent of the incident require on-site verification to determine the appropriate security response.",
+    )
+    s4 = "Manual verification of CCTV footage, access-control logs, and on-site conditions is required to confirm the nature and extent of the incident."
+    s5 = "This advisory has been generated using rule-based severity classification and should be reviewed by the duty supervisor."
+    return f"{s1} {s2} {s3} {s4} {s5}"
+
+
+def _rule_based_advisory(input_data: dict) -> dict:
+    """SOP-respecting advisory for post-validation API failures.
+
+    Called when input is valid but the AI service is unavailable. Applies the
+    minimum-severity rules from INCIDENT_RULES so incidents such as
+    intrusion_attempt are never silently downgraded to Green.
+    """
+    location = input_data["location"].strip()
+    incident_type = input_data.get("incidentType", "").strip().lower()
+    raw_description = input_data.get("description", "").strip()
+
+    rule = INCIDENT_RULES.get(incident_type, DEFAULT_INCIDENT_RULE)
+
+    return {
+        "title": rule["title"],
+        "flag": rule["flag"],
+        "location": location,
+        "dispatch_unit": rule["dispatch_unit"],
+        "expected_response_time": rule["expected_response_time"],
+        "description": _build_rule_based_description(incident_type, location, raw_description),
+        "explanation": rule["explanation"],
+        "actions": list(rule["actions"]),
+    }
+
 
 def get_advisory(incident_dict):
     return certis_incident_analysis(incident_dict)
 
 
 def certis_incident_analysis(input_data):
-    try:
-        load_dotenv()
-    except Exception as e:
-        raise RuntimeError(f"Failed to load environment variables: {e}") from e
+    # --- Input validation (pre-validation: no clean incidentType yet) ---
+    if not isinstance(input_data, dict):
+        return _fallback_advisory("unknown", "Invalid input: expected a dictionary.")
+
+    # --- Normalize to a working copy for backward compatibility ---
+    # Supports both the routes format {incidentType, location, source, description}
+    # and the pipeline format {name, location, description, triggering_events, ...}.
+    input_data = dict(input_data)
+    if "incidentType" not in input_data and "name" in input_data:
+        input_data["incidentType"] = input_data["name"]
+    if "source" not in input_data:
+        input_data["source"] = input_data.get("source_type", "pipeline")
+
+    missing_keys = REQUIRED_INPUT_KEYS - input_data.keys()
+    if missing_keys:
+        return _fallback_advisory(
+            input_data.get("location", "unknown"),
+            f"Invalid input: missing required fields: {', '.join(sorted(missing_keys))}.",
+        )
+
+    for key in REQUIRED_INPUT_KEYS:
+        if not isinstance(input_data[key], str) or not input_data[key].strip():
+            return _fallback_advisory(
+                input_data.get("location", "unknown"),
+                f"Invalid input: '{key}' must be a non-empty string.",
+            )
+
+    location = input_data["location"].strip()
+
+    # --- Post-validation failures: delegate to _rule_based_advisory ---
 
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
-        raise RuntimeError("OPENAI_API_KEY is missing")
+        return _rule_based_advisory(input_data)
 
     try:
         client = OpenAI(api_key=api_key)
-    except Exception as e:
-        raise RuntimeError(f"Failed to initialize OpenAI client: {e}") from e
+    except Exception:
+        return _rule_based_advisory(input_data)
 
-    system_prompt = """
-    You are a professional 'Security Response Advisor' for Certis.
-    Your task is to analyze structured incident data from CCTV, access logs, and distress calls, then provide security recommendations.
-
-    Classify the incident strictly into these 3 status flags based on security protocols:
-    - Green: Anomalies or suspicious situations that require monitoring or a routine check, but are not immediate crimes.
-    - Yellow: Confirmed non-violent crimes, security breaches, or highly suspicious behavior.
-    - Red: Critical/Danger! Life-threatening situations, physical violence, weapons, or major emergencies.
-
-    MANDATORY RULES:
-    1. Recommendations must be proportionate, highly tactical, and use professional security terminology (e.g., 'containment', 'perimeter breach', 'escalation protocol').
-    2. Provide logical reasoning (Explainability) to avoid a black-box approach.
-    3. Maintain a strictly objective, professional, and formal tone.
-    4. If the input data is empty, corrupted, or lacks clear security context, classify as "Green", state "Insufficient data for full analysis", and advise manual camera verification.
-    5. Output MUST be pure JSON with this structure:
-    {
-        "title": "A short, professional title (max 5 words)",
-        "flag": "Green/Yellow/Red",
-        "location": "Exact location extracted from data",
-        "dispatch_unit": "Specific unit (e.g., 'Armed Response Team', 'Medical Unit')",
-        "expected_response_time": "Timeframe (e.g., 'Immediate < 3 mins')",
-        "description": "Provide a comprehensive, highly detailed paragraph (minimum 4-5 sentences). Describe the exact chronological events, the specific entities involved, the nature of the threat, and the potential operational impact. Make it sound like an official Certis incident report.",
-        "explanation": "Reasoning WHY this flag was chosen",
-        "actions": [
-            "Step 1: [Immediate Tactical Action] - e.g., 'Deploy Ground Officers to secure the perimeter and establish a chokepoint at the main entry.'",
-            "Step 2: [Containment/Investigation] - e.g., 'Command Center to isolate the affected sector CCTV feeds and lock down adjacent electronic doors.'",
-            "Step 3: [Escalation/Follow-up] - e.g., 'Cross-reference access logs from the past 2 hours and notify local law enforcement if the suspect attempts egress.'"
-        ]
-    }
-    """
+    # Reinforce exact location echo in the user message; post-processing below
+    # provides the hard guarantee regardless of model output.
+    user_content = (
+        f"{json.dumps(input_data)}\n\n"
+        f"IMPORTANT: The 'location' field in your JSON output must be exactly: \"{location}\""
+    )
 
     try:
         response = client.chat.completions.create(
-            model="o4-mini",
+            model=os.getenv("OPENAI_MODEL", "o4-mini"),
             response_format={"type": "json_object"},
             messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": json.dumps(input_data)}
-            ]
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": user_content},
+            ],
         )
-    except Exception as e:
-        raise RuntimeError(f"Advisory API request failed: {e}") from e
+    except Exception:
+        return _rule_based_advisory(input_data)
 
     try:
-        return json.loads(response.choices[0].message.content)
-    except Exception as e:
-        raise RuntimeError(f"Failed to parse advisory JSON response: {e}") from e
+        advisory = json.loads(response.choices[0].message.content)
+    except Exception:
+        return _rule_based_advisory(input_data)
 
+    if not isinstance(advisory, dict):
+        return _rule_based_advisory(input_data)
 
+    # --- Post-process: hard-enforce location echo ---
+    advisory["location"] = location
+
+    # --- Post-process: enforce valid flag and SOP minimum severity ---
+    incident_type_lower = input_data.get("incidentType", "").strip().lower()
+    minimum_flag = MINIMUM_SEVERITY.get(incident_type_lower, "Green")
+    raw_flag = advisory.get("flag", "")
+    if raw_flag not in VALID_FLAGS:
+        advisory["flag"] = minimum_flag
+    elif FLAG_RANK.get(raw_flag, 0) < FLAG_RANK.get(minimum_flag, 0):
+        advisory["flag"] = minimum_flag
+
+    # --- Post-process: enforce exactly 3 action strings ---
+    actions = advisory.get("actions", [])
+    if not isinstance(actions, list):
+        actions = []
+    actions = [str(a) for a in actions[:3]]
+    while len(actions) < 3:
+        actions.append(FALLBACK_ACTIONS[len(actions)])
+    advisory["actions"] = actions
+
+    # --- Post-process: ensure all required output keys are present ---
+    for key in REQUIRED_OUTPUT_KEYS:
+        if advisory.get(key) is None:
+            advisory[key] = [] if key == "actions" else ""
+
+    return advisory
