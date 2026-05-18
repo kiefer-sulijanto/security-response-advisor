@@ -24,6 +24,24 @@ const FILTER_LABELS = {
 const FLAG_COLORS = { red: "#e24b4a", yellow: "#efaf27", green: "#22c55e" };
 const FLAG_LABELS = { red: "Critical Threat", yellow: "Caution", green: "All Clear" };
 
+function getSourceInfo(inc) {
+  const src = inc.source || "";
+  if (src === "CCTV Frame Pipeline") return { type: "video",  label: "Video Upload" };
+  if (src === "CCTV Pipeline")       return { type: "camera", label: "Live Camera"  };
+  if (src === "Access Log Pipeline") return { type: "access", label: "Access Log"   };
+  return { type: "other", label: src || "—" };
+}
+
+function formatIncTime(raw) {
+  if (!raw) return "—";
+  try {
+    const d = new Date(raw);
+    if (isNaN(d)) return raw;
+    return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+      + " · " + d.toLocaleDateString("en-SG", { day: "2-digit", month: "short" });
+  } catch { return raw; }
+}
+
 const SEV_BORDER = { critical: C.red, warning: C.amber, info: C.blue };
 
 const labelStyle = {
@@ -44,8 +62,9 @@ export function IncidentsPage({ incidents, groundOfficers = [], analyses = [], o
   const [instrText,   setInstrText]   = useState("");
   const [instrPrio,   setInstrPrio]   = useState("high");
 
+  const getSeverity = (i) => i.severity || (i.flag === "red" ? "critical" : i.flag === "yellow" ? "warning" : "info");
   const filtered = filter === "all" ? incidents
-    : incidents.filter(i => i.severity === filter || i.status === filter);
+    : incidents.filter(i => getSeverity(i) === filter || i.status === filter);
 
   const availableOfficers = groundOfficers.filter(g => g.status !== "off_duty");
 
@@ -56,8 +75,8 @@ export function IncidentsPage({ incidents, groundOfficers = [], analyses = [], o
   };
 
   const total    = incidents.length;
-  const active   = incidents.filter(i => i.status === "active").length;
-  const critical = incidents.filter(i => i.severity === "critical").length;
+  const active   = incidents.filter(i => i.status !== "resolved").length;
+  const critical = incidents.filter(i => i.severity === "critical" || (i.severity == null && i.flag === "red")).length;
   const resolved = incidents.filter(i => i.status === "resolved").length;
 
   return (
@@ -149,23 +168,36 @@ export function IncidentsPage({ incidents, groundOfficers = [], analyses = [], o
                     {/* Incident name */}
                     <div style={{ minWidth: 0 }}>
                       <p style={{ fontSize: 13, fontWeight: 700, color: C.textPrimary, margin: "0 0 2px",
-                        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                        title={inc.videoName || inc.incidentType || inc.id}>
                         {inc.videoName || inc.incidentType || inc.id}
                       </p>
                       <p style={{ fontSize: 11, color: C.textMuted, margin: 0 }}>{inc.id}</p>
                     </div>
 
                     {/* Time */}
-                    <span style={{ fontSize: 12, color: C.textSecondary }}>{inc.timestamp}</span>
-
-                    {/* Source */}
-                    <span style={{ fontSize: 12, color: C.textSecondary,
-                      overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {inc.videoName || "—"}
+                    <span style={{ fontSize: 12, color: C.textSecondary }}>
+                      {formatIncTime(inc.createdAt || inc.timestamp)}
                     </span>
 
+                    {/* Source */}
+                    {(() => {
+                      const src = getSourceInfo(inc);
+                      return (
+                        <span style={{ display: "flex", alignItems: "center", gap: 5,
+                          fontSize: 12, color: C.textSecondary, overflow: "hidden" }}>
+                          {src.type === "camera"
+                            ? <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                            : <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+                          }
+                          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                            title={src.label}>{src.label}</span>
+                        </span>
+                      );
+                    })()}
+
                     {/* Severity */}
-                    <Badge sev={inc.severity} />
+                    <Badge sev={inc.severity || (inc.flag === "red" ? "critical" : inc.flag === "yellow" ? "warning" : "info")} />
 
                     {/* Status */}
                     <div style={{ display: "flex", alignItems: "center", fontSize: 12, color: C.textPrimary }}>
@@ -210,8 +242,12 @@ export function IncidentsPage({ incidents, groundOfficers = [], analyses = [], o
                         color: isExpanded ? C.blue : C.textMuted,
                         borderRadius: 6, padding: "4px 8px", fontSize: 11,
                         fontWeight: 600, cursor: "pointer", transition: "all .15s",
+                        display: "flex", alignItems: "center", justifyContent: "center",
                       }}>
-                        {isExpanded ? "▴" : "▾"}
+                        {isExpanded
+                          ? <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+                          : <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                        }
                       </button>
                     </div>
                   </div>

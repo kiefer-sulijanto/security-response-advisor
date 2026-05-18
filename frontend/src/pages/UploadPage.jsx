@@ -5,11 +5,6 @@ import { Spinner } from "../components/ui";
 import { extractFramesEveryNSeconds } from "../services/videoUtils";
 import { runPipelineMultiFrameAnalysis } from "../services/pipelineAnalysis";
 
-const INCIDENT_TYPES = [
-  "VCA Intrusion Detection", "Fire Alarm Response", "Theft / Attempted Theft",
-  "Lift Alarm", "Door Access Control Breach", "Suspicious Activity",
-  "VCA Prolonged Parking", "Public Order Incident", "Facilities Alert", "Other",
-];
 
 export function UploadPage({ onAnalysisComplete }) {
   const [file, setFile]           = useState(null);
@@ -19,8 +14,6 @@ export function UploadPage({ onAnalysisComplete }) {
   const [status, setStatus]       = useState("idle"); // idle | extracting | analyzing | error
   const [statusLabel, setStatusLabel] = useState("");
   const [errorMsg, setErrorMsg]   = useState("");
-  // Incident context for AI
-  const [incidentType, setIncidentType] = useState("");
   const fileInputRef = useRef(null);
 
   const handleFile = useCallback((f) => {
@@ -115,19 +108,16 @@ export function UploadPage({ onAnalysisComplete }) {
             onChange={(e) => handleFile(e.target.files[0])} />
 
           {file && (
-            <p style={{ fontSize: 13, color: C.green, fontWeight: 500, textAlign: "center", marginBottom: 12 }}>
-              📹 {file.name} ({(file.size / 1024 / 1024).toFixed(1)} MB)
-            </p>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 12 }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.green} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/>
+              </svg>
+              <p style={{ fontSize: 13, color: C.green, fontWeight: 500, margin: 0 }}>
+                {file.name} ({(file.size / 1024 / 1024).toFixed(1)} MB)
+              </p>
+            </div>
           )}
 
-          {/* Incident context — optional, improves AI output */}
-          <div style={{ marginBottom: 20 }}>
-            <label style={ctxLabel}>Incident Type (optional)</label>
-            <select value={incidentType} onChange={e => setIncidentType(e.target.value)} style={ctxInput(C)}>
-              <option value="">— Auto-detect —</option>
-              {INCIDENT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-            </select>
-          </div>
           <div style={{ marginBottom: 20 }}>
             <label style={ctxLabel}>Location</label>
             <select

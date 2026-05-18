@@ -18,7 +18,6 @@ export function ResultsPage({ analysis, onBack }) {
     vid.play();
     setActiveClip(idx);
   };
-  console.log("snapshotBase64 exists?", !!result?.snapshotBase64, result?.snapshotBase64?.slice?.(0, 30));
 
   return (
     <div style={{ flex: 1, overflow: "auto", background: C.bg, fontFamily: font, overscrollBehavior: "contain" }}>
@@ -29,11 +28,15 @@ export function ResultsPage({ analysis, onBack }) {
           alignSelf: "flex-start", background: "transparent", color: C.textSecondary,
           border: `1px solid ${C.border}`, borderRadius: 50,
           padding: "9px 22px", fontSize: 13, fontWeight: 600, cursor: "pointer",
+          display: "flex", alignItems: "center", gap: 6,
           transition: "color .2s, border-color .2s",
         }}
         onMouseEnter={e => { e.currentTarget.style.color = "#fff"; e.currentTarget.style.borderColor = "#aaa"; }}
         onMouseLeave={e => { e.currentTarget.style.color = C.textSecondary; e.currentTarget.style.borderColor = C.border; }}
-        >← Analyze another video</button>
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          Analyze another video
+        </button>
 
         <div style={card({ padding: 0, overflow: "hidden", width: "100%", maxWidth: 720 })}>
           <div style={{ background: "#000" }}>
@@ -55,7 +58,6 @@ export function ResultsPage({ analysis, onBack }) {
               ))}
             </div>
           </div>
-          {/* 🤖 AI-GENERATED LEGEND */}
           <div style={{ padding: 24, borderTop: `1px solid ${C.border}`,
             display: "flex", flexDirection: "column", gap: 18 }}>
             {result.segments.map((seg, i) => (
@@ -172,7 +174,7 @@ export function ResultsPage({ analysis, onBack }) {
               borderLeft: `4px solid ${FLAG_COLORS[result.flag] || C.green}`,
             })}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-                <span style={{ fontSize: 22 }}>{FLAG_ICONS[result.flag] || "🟢"}</span>
+                {FLAG_ICONS[result.flag] || FLAG_ICONS.green}
                 <span style={{
                   fontSize: 13, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.5px",
                   color: FLAG_COLORS[result.flag] || C.green,
@@ -212,8 +214,9 @@ export function ResultsPage({ analysis, onBack }) {
                     {result.recommendedOfficer.badge}
                   </span>
                 </div>
-                <div style={{ fontSize: 12, color: C.textSecondary, marginTop: 2 }}>
-                  📍 {result.recommendedOfficer.location} · {result.recommendedOfficer.status}
+                <div style={{ fontSize: 12, color: C.textSecondary, marginTop: 2, display: "flex", alignItems: "center", gap: 4 }}>
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                  {result.recommendedOfficer.location} · {result.recommendedOfficer.status}
                 </div>
                 {result.recommendedOfficer.reason && (
                   <div style={{ fontSize: 13, color: "#bbb", marginTop: 6, lineHeight: 1.5 }}>
@@ -225,7 +228,6 @@ export function ResultsPage({ analysis, onBack }) {
           </div>
         )}
 
-        {/* 🤖 AI-GENERATED ACTIONS */}
         {result.actions?.length > 0 && (
           <div style={{ width: "100%", maxWidth: 720 }}>
             <p style={{ fontSize: 18, fontWeight: 800, marginBottom: 14, color: C.textPrimary }}>Recommended Actions</p>
@@ -246,5 +248,9 @@ export function ResultsPage({ analysis, onBack }) {
 }
 
 const FLAG_COLORS = { red: "#e24b4a", yellow: "#efaf27", green: "#22c55e" };
-const FLAG_ICONS  = { red: "🔴", yellow: "🟡", green: "🟢" };
+const FLAG_ICONS  = {
+  red:    <span style={{ display: "inline-block", width: 14, height: 14, borderRadius: "50%", background: "#e24b4a", boxShadow: "0 0 0 3px rgba(226,75,74,0.25)", flexShrink: 0 }} />,
+  yellow: <span style={{ display: "inline-block", width: 14, height: 14, borderRadius: "50%", background: "#efaf27", boxShadow: "0 0 0 3px rgba(239,175,39,0.25)", flexShrink: 0 }} />,
+  green:  <span style={{ display: "inline-block", width: 14, height: 14, borderRadius: "50%", background: "#22c55e", boxShadow: "0 0 0 3px rgba(34,197,94,0.25)",  flexShrink: 0 }} />,
+};
 const FLAG_LABELS = { red: "Critical Threat", yellow: "Caution", green: "All Clear" };

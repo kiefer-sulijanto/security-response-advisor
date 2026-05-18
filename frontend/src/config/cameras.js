@@ -20,8 +20,8 @@
 // ╚══════════════════════════════════════════════════════════════════════════╝
 export const CAMERA_CONFIG = [
   { id: "cam_01", name: "Cam 1", location: "room_A",    source: "stream", streamUrl: "http://172.20.10.2:4747/video", processingIntervalMs: 1000 },
-  { id: "cam_02", name: "Cam 2", location: "room_B",   source: "stream", streamUrl: "http://172.20.10.3:4747/video", processingIntervalMs: 1000 },
-  { id: "cam_03", name: "Cam 3", location: "room_C",     source: "stream", streamUrl: "http://172.20.10.4:4747/video", processingIntervalMs: 1000 },
+  { id: "cam_02", name: "Cam 2", location: "room_B",    source: "stream", streamUrl: "http://172.20.10.3:4747/video", processingIntervalMs: 1000 },
+  { id: "cam_03", name: "Cam 3", location: "room_C",    source: "stream", streamUrl: "http://172.20.10.4:4747/video", processingIntervalMs: 1000 },
 
   { id: "cam_04", name: "Cam 4", location: "carpark_b1",  source: "placeholder", videoUrl: "/videos/normal_001.mp4" },
   { id: "cam_05", name: "Cam 5", location: "east_wing",   source: "placeholder", videoUrl: "/videos/normal_002.mp4" },
