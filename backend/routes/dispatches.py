@@ -112,6 +112,7 @@ def update_dispatch(dispatch_id: str, req: UpdateDispatchRequest):
                 for incident in state.incidents_db:
                     if incident["id"] == dispatch.get("incidentId"):
                         incident["status"] = "in_progress"
+                        incident["updatedAt"] = _now_iso()
                         break
 
             elif req.status == "resolved":
@@ -120,6 +121,7 @@ def update_dispatch(dispatch_id: str, req: UpdateDispatchRequest):
                         officer["status"] = "standby"
                         officer["assignedIncidentId"] = None
                         officer["assigned_incident_id"] = None
+                        officer["task"] = None
                         officer["lastSeenAt"] = _now_iso()
                         break
                 for incident in state.incidents_db:

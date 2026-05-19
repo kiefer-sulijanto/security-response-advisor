@@ -1,18 +1,25 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 from services.detections.utils import distance_between_centers, parse_timestamp
+
+
+DEFAULT_DWELL_SECONDS = 10
+DEFAULT_MOVEMENT_THRESHOLD_PX = 80.0
+DEFAULT_OWNER_DISTANCE_THRESHOLD_PX = 180.0
+DEFAULT_COOLDOWN_SECONDS = 30
+DEFAULT_EXIT_GRACE_SECONDS = 5
 
 
 class UnattendedBagDetector:
     def __init__(
         self,
-        dwell_seconds: int = 10,
-        movement_threshold_px: float = 80.0,
-        owner_distance_threshold_px: float = 180.0,
-        cooldown_seconds: int = 30,
-        exit_grace_seconds: int = 5,
+        dwell_seconds: int = DEFAULT_DWELL_SECONDS,
+        movement_threshold_px: float = DEFAULT_MOVEMENT_THRESHOLD_PX,
+        owner_distance_threshold_px: float = DEFAULT_OWNER_DISTANCE_THRESHOLD_PX,
+        cooldown_seconds: int = DEFAULT_COOLDOWN_SECONDS,
+        exit_grace_seconds: int = DEFAULT_EXIT_GRACE_SECONDS,
     ):
         self.config = {
             "dwell_seconds": dwell_seconds,
