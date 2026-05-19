@@ -139,11 +139,12 @@ export default function App() {
 
     if (page === "map") {
       return (
-        <LocationMapPage
-          incidents={incidents}
-          groundOfficers={groundOfficers}
-          locationMap={locationMap}
-          onNav={setPage}
+       <LocationMapPage
+         incidents={incidents}
+         groundOfficers={groundOfficers}
+         locationMap={locationMap}
+         onNav={setPage}
+         onDispatch={handleDispatch}
         />
       );
     }
