@@ -15,6 +15,7 @@ export function GroundOfficersPage({ groundOfficers, dispatches, incidents, onDi
   const [instrText,    setInstrText]    = useState("");
   const [instrPrio,    setInstrPrio]    = useState("high");
   const [instrIncident,setInstrIncident]= useState("");
+  const [successFor,   setSuccessFor]   = useState(null);
 
   const handleDispatch = (officerId) => {
     if (!instrText.trim()) return;
@@ -23,6 +24,8 @@ export function GroundOfficersPage({ groundOfficers, dispatches, incidents, onDi
     setInstrPrio("high");
     setInstrIncident("");
     setExpandedId(null);
+    setSuccessFor(officerId);
+    setTimeout(() => setSuccessFor(null), 3000);
   };
 
   const onDuty = groundOfficers.filter(g => g.status !== "off_duty");
@@ -141,6 +144,20 @@ export function GroundOfficersPage({ groundOfficers, dispatches, incidents, onDi
                     </div>
                   )}
 
+                  {/* Success banner */}
+                  {successFor === officer.id && !isOpen && (
+                    <div style={{ padding: "10px 18px", background: "rgba(34,197,94,0.08)",
+                      borderTop: `1px solid rgba(34,197,94,0.25)`,
+                      display: "flex", alignItems: "center", gap: 8 }}>
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                      <span style={{ fontSize: 12, color: "#22c55e", fontWeight: 600 }}>
+                        Instruction sent to {officer.name.split(" ")[0]}
+                      </span>
+                    </div>
+                  )}
+
                   {/* Dispatch form */}
                   {isOpen && (
                     <div style={{ padding: "14px 18px", background: "rgba(240,120,32,0.04)", borderTop: `1px solid ${C.border}` }}>
@@ -226,7 +243,9 @@ export function GroundOfficersPage({ groundOfficers, dispatches, incidents, onDi
                     borderBottom: i < arr.length - 1 ? `1px solid ${C.border}` : "none",
                   }}>
                     <div style={{ width: 34, height: 34, borderRadius: 10, flexShrink: 0,
-                      background: PRIO_DIM[d.priority ?? "high"], display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15 }}>
+                      background: PRIO_DIM[d.priority ?? "high"],
+                      color: PRIO_COLOR[d.priority ?? "high"],
+                      display: "flex", alignItems: "center", justifyContent: "center" }}>
                       {PRIO_ICON[d.priority ?? "high"]}
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
@@ -287,4 +306,10 @@ const inputStyle = {
 };
 
 const PRIO_DIM  = { critical: "rgba(226,75,74,0.15)",  high: "rgba(239,175,39,0.15)", medium: "rgba(74,158,255,0.15)" };
-const PRIO_ICON = { critical: "🚨", high: "⚠️", medium: "🔔" };
+const PRIO_COLOR = { critical: "#e24b4a", high: "#efaf27", medium: "#4a9eff" };
+const _S = { width: 15, height: 15, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round" };
+const PRIO_ICON = {
+  critical: <svg {..._S}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>,
+  high:     <svg {..._S}><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>,
+  medium:   <svg {..._S}><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>,
+};

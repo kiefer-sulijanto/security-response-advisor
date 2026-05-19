@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { C, card, font } from "../constants/colors";
 import { CAMERA_CONFIG } from "../config/cameras";
 import { TopBar } from "../components/TopBar";
@@ -50,16 +51,22 @@ export function DashboardPage({ onNav, analyses, incidents, groundOfficers = [],
   const warningCount  = analyses.filter(a => a.result?.flag === "yellow").length;
   const activeIncidents = incidents.filter(i => i.status !== "resolved");
 
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetError,   setResetError]   = useState("");
+
   async function handleResetDemo() {
     const confirmed = window.confirm(
       "Reset all demo incidents, dispatches, reports, officers, and pipeline state?"
     );
     if (!confirmed) return;
+    setResetLoading(true);
+    setResetError("");
     try {
       await api.resetDemoState();
       window.location.reload();
     } catch (err) {
-      alert(`Reset failed: ${err.message}`);
+      setResetLoading(false);
+      setResetError(err.message || "Reset failed");
     }
   }
 
@@ -81,28 +88,28 @@ export function DashboardPage({ onNav, analyses, incidents, groundOfficers = [],
               label="Videos Analyzed"
               value={analyses.length || "—"}
               sub={analyses.length ? `${analyses.length} total` : "No videos yet"}
-              icon="🎥"
+              icon={<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>}
             />
             <StatCard
               label="Threats Detected"
               value={criticalCount || "—"}
               sub={criticalCount ? "Critical events" : "None so far"}
               accent={criticalCount ? C.red : undefined}
-              icon="🚨"
+              icon={<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>}
             />
             <StatCard
               label="Warnings"
               value={warningCount || "—"}
               sub={warningCount ? "Needs attention" : "None so far"}
               accent={warningCount ? C.amber : undefined}
-              icon="⚠️"
+              icon={<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>}
             />
             <StatCard
               label="Incidents Logged"
               value={incidents.length || "—"}
               sub={incidents.length ? `${activeIncidents.length} active` : "None logged"}
               accent={activeIncidents.length ? C.red : undefined}
-              icon="📋"
+              icon={<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg>}
             />
           </div>
         </div>
@@ -123,17 +130,31 @@ export function DashboardPage({ onNav, analyses, incidents, groundOfficers = [],
                   <p style={{ fontSize: 13, fontWeight: 700, color: C.textPrimary, margin: 0 }}>Live Cameras</p>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <button onClick={handleResetDemo} style={{
-                    background: "transparent", border: `1px solid ${C.border}`,
-                    color: C.textMuted, fontSize: 11, fontWeight: 600,
-                    cursor: "pointer", padding: "5px 10px", borderRadius: 6,
-                    transition: "border-color .15s, color .15s",
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = C.textSecondary; e.currentTarget.style.color = C.textSecondary; }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.textMuted; }}
-                  >
-                    Reset Demo
-                  </button>
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3 }}>
+                    <button onClick={handleResetDemo} disabled={resetLoading} style={{
+                      background: "transparent", border: `1px solid ${C.border}`,
+                      color: resetLoading ? C.textMuted : C.textMuted, fontSize: 11, fontWeight: 600,
+                      cursor: resetLoading ? "not-allowed" : "pointer", padding: "5px 10px", borderRadius: 6,
+                      transition: "border-color .15s, color .15s", opacity: resetLoading ? 0.5 : 1,
+                      display: "flex", alignItems: "center", gap: 5,
+                    }}
+                    onMouseEnter={e => { if (!resetLoading) { e.currentTarget.style.borderColor = C.textSecondary; e.currentTarget.style.color = C.textSecondary; } }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.textMuted; }}
+                    >
+                      {resetLoading && (
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                          style={{ animation: "spin 0.8s linear infinite" }}>
+                          <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+                        </svg>
+                      )}
+                      {resetLoading ? "Resetting…" : "Reset Demo"}
+                    </button>
+                    {resetError && (
+                      <span style={{ fontSize: 10, color: C.red, maxWidth: 140, textAlign: "right", lineHeight: 1.3 }}>
+                        {resetError}
+                      </span>
+                    )}
+                  </div>
                   <button onClick={() => onNav("cameras")} style={{
                     background: "transparent", border: "none", color: C.green,
                     fontSize: 12, fontWeight: 600, cursor: "pointer", padding: 0, opacity: 0.85,
@@ -167,7 +188,7 @@ export function DashboardPage({ onNav, analyses, incidents, groundOfficers = [],
                 onAction={() => onNav("incidents")}
               />
               {incidents.length === 0 ? (
-                <EmptyState icon="" title="No active incidents" />
+                <EmptyState title="No active incidents" />
               ) : (
                 <div style={{ overflowY: "auto", flex: 1 }}>
                   {incidents.slice().reverse().slice(0, 8).map((inc, i, arr) => {
@@ -215,7 +236,9 @@ export function DashboardPage({ onNav, analyses, incidents, groundOfficers = [],
             <div style={card({ padding: 0, overflow: "hidden" })}>
               <CardHeader title="Recent Analyses" action="+ New →" onAction={() => onNav("upload")} />
               {analyses.length === 0 ? (
-                <EmptyState icon="🎥" title="No analyses yet"
+                <EmptyState
+                  icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>}
+                  title="No analyses yet"
                   subtitle="Upload a video to run your first AI-powered security analysis."
                   actionLabel="Upload video" onAction={() => onNav("upload")} />
               ) : (
@@ -259,7 +282,9 @@ export function DashboardPage({ onNav, analyses, incidents, groundOfficers = [],
             <div style={card({ padding: 0, overflow: "hidden" })}>
               <CardHeader title="Ground Officers" action="Manage →" onAction={() => onNav("officers")} />
               {groundOfficers.length === 0 ? (
-                <EmptyState icon="👮" title="No officers" subtitle="Officers will appear here once added." />
+                <EmptyState
+                  icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>}
+                  title="No officers" subtitle="Officers will appear here once added." />
               ) : (
                 <>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr" }}>

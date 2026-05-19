@@ -22,5 +22,6 @@ export const C = {
 export const font = "'Segoe UI', system-ui, sans-serif";
 
 export const card = (extra = {}) => ({
-  background: C.surface, borderRadius: 14, border: `1px solid ${C.border}`, ...extra,
+  background: C.surface, borderRadius: 14, border: `1px solid ${C.border}`,
+  boxShadow: "0 1px 4px rgba(0,0,0,0.2)", ...extra,
 });
