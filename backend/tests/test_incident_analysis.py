@@ -100,3 +100,36 @@ def test_invalid_input_returns_schema_compliant_fallback(monkeypatch):
     assert result["explanation"]
     assert isinstance(result["actions"], list)
     assert len(result["actions"]) == 3
+
+
+def test_unattended_bag_minimum_yellow(monkeypatch):
+    monkeypatch.setenv("OPENAI_API_KEY", "")
+
+    result = get_advisory({
+        "incidentType": "unattended_bag",
+        "location": "main_lobby",
+        "source": "CCTV",
+        "description": "Bag detected in the main lobby with no nearby owner for the configured dwell time.",
+    })
+
+    assert result["flag"] == "Yellow"
+    assert result["location"] == "main_lobby"
+    assert isinstance(result["actions"], list)
+    assert len(result["actions"]) == 3
+
+
+def test_pipeline_format_unattended_bag_fallback(monkeypatch):
+    monkeypatch.setenv("OPENAI_API_KEY", "")
+
+    result = get_advisory({
+        "name": "unattended_bag",
+        "location": "main_lobby",
+        "description": "Bag or luggage left unattended in monitored area.",
+        "triggering_events": [],
+        "risk_score": 7,
+        "status": "NEW",
+    })
+
+    assert result["flag"] == "Yellow"
+    assert result["location"] == "main_lobby"
+    assert len(result["actions"]) == 3
