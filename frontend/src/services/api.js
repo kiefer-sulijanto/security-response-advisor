@@ -23,6 +23,9 @@ export const api = {
   getPipelineCameras: () => req("GET", "/pipeline/cameras"),
   getPipelineEvents: () => req("GET", "/pipeline/events"),
 
+  // Location map
+  getLocationMap: () => req("GET", "/locations/map"),
+
   // Pipeline endpoints
   processCctvDetection: (data) => req("POST", "/pipeline/cctv", data),
   processCctvFrame: (data) => req("POST", "/pipeline/cctv/frame", data),
