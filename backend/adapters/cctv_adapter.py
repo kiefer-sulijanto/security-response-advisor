@@ -38,12 +38,19 @@ def process_cctv_detection(detection: dict) -> list:
     except (AttributeError, TypeError, ValueError):
         return []
 
+    snapshot_base64 = detection.get("snapshot_base64")
+    snapshot_frame_index = detection.get("snapshot_frame_index")
+    snapshot_strategy = detection.get("snapshot_strategy")
+
     metadata = {
         "camera_id": camera_id,
         "raw_label": label,
         "bbox": bbox,
         "center": center,
         "person_count": person_count,
+        "snapshot_base64": snapshot_base64,
+        "snapshot_frame_index": snapshot_frame_index,
+        "snapshot_strategy": snapshot_strategy,
     }
 
     events = []
