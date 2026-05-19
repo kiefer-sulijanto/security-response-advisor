@@ -179,7 +179,12 @@ export function IncidentsPage({ incidents, groundOfficers = [], analyses = [], o
                         title={inc.videoName || inc.incidentType || inc.id}>
                         {inc.videoName || inc.incidentType || inc.id}
                       </p>
-                      <p style={{ fontSize: 11, color: C.textMuted, margin: 0 }}>{inc.id}</p>
+                     <p style={{ fontSize: 11, color: C.textMuted, margin: 0 }}>
+                        {inc.id}
+                     </p>
+                     <p style={{ fontSize: 11, color: C.textSecondary, margin: "2px 0 0" }}>
+                       {inc.displayLocation || inc.display_location || inc.location || "Unknown location"}
+                    </p>
                     </div>
 
                     {/* Time */}

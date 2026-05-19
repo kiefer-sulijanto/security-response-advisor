@@ -22,6 +22,22 @@ const ICONS = {
       <circle cx="8" cy="8.5" r="2" stroke="currentColor" strokeWidth="1.4"/>
     </svg>
   ),
+  map: (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <path
+        d="M2 3.5L6 2l4 1.5L14 2v10.5L10 14l-4-1.5L2 14V3.5z"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M6 2v10.5M10 3.5V14"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+      />
+    </svg>
+  ),
   incidents: (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
       <path d="M8 2L14.5 13H1.5L8 2z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/>
@@ -61,6 +77,7 @@ const NAV_MAIN = [
   { id: "dashboard", label: "Dashboard" },
   { id: "upload",    label: "Analyze" },
   { id: "cameras",   label: "Cameras" },
+  { id: "map",       label: "Location Map" },
   { id: "incidents", label: "Incidents" },
   { id: "officers",  label: "Ground Officers" },
   { id: "report",    label: "Report" },

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { C } from "./constants/colors";
 import { api } from "./services/api.js";
 import { Sidebar }            from "./components/Sidebar";
@@ -11,6 +11,22 @@ import { GroundOfficersPage } from "./pages/GroundOfficersPage";
 import { ShiftReportPage }    from "./pages/ShiftReportPage";
 import { ReportPage }         from "./pages/ReportPage";
 import { LoginPage }          from "./pages/LoginPage";
+import { LocationMapPage }    from "./pages/LocationMapPage";
+
+const EMPTY_LOCATION_MAP = { floors: [] };
+
+function isActiveIncident(incident) {
+  const status = String(incident?.status || "").toLowerCase();
+  return !["resolved", "closed", "completed", "cancelled"].includes(status);
+}
+
+function isCriticalIncident(incident) {
+  const severity = String(incident?.severity || "").toLowerCase();
+  const flag = String(incident?.flag || "").toLowerCase();
+  const priority = String(incident?.priority || "").toLowerCase();
+
+  return severity === "critical" || flag === "red" || priority === "red";
+}
 
 export default function App() {
   const [loggedIn, setLoggedIn]               = useState(false);
@@ -21,10 +37,11 @@ export default function App() {
   const [groundOfficers, setGroundOfficers]   = useState([]);
   const [dispatches, setDispatches]           = useState([]);
   const [goReports, setGoReports]             = useState([]);
-  const [backendOnline, setBackendOnline]     = useState(null);  // null=checking, true, false
-  const analysisCountRef = useRef(0);
+  const [locationMap, setLocationMap]         = useState(EMPTY_LOCATION_MAP);
+  const [backendOnline, setBackendOnline]     = useState(null); // null=checking, true, false
 
-  // Poll backend every 10s for shared state
+  // Poll backend every 5s for shared state.
+  // Location map endpoint is optional for now, so frontend will not break if backend has not added it yet.
   const syncFromBackend = useCallback(async () => {
     try {
       const [inc, off, dis, rpts] = await Promise.all([
@@ -33,29 +50,51 @@ export default function App() {
         api.getDispatches(),
         api.getReports(),
       ]);
-      setIncidents(inc);
-      setGroundOfficers(off);
-      setDispatches(dis);
-      setGoReports(rpts);
+
+      setIncidents(Array.isArray(inc) ? inc : []);
+      setGroundOfficers(Array.isArray(off) ? off : []);
+      setDispatches(Array.isArray(dis) ? dis : []);
+      setGoReports(Array.isArray(rpts) ? rpts : []);
+
+      if (typeof api.getLocationMap === "function") {
+        try {
+          const loc = await api.getLocationMap();
+          setLocationMap(
+            loc && Array.isArray(loc.floors)
+              ? loc
+              : EMPTY_LOCATION_MAP
+          );
+        } catch (err) {
+          console.warn("Location map endpoint not ready yet:", err.message);
+          setLocationMap(EMPTY_LOCATION_MAP);
+        }
+      } else {
+        setLocationMap(EMPTY_LOCATION_MAP);
+      }
+
       setBackendOnline(true);
-    } catch {
+    } catch (err) {
+      console.warn("Backend sync failed:", err.message);
       setBackendOnline(false);
     }
   }, []);
 
   useEffect(() => {
     syncFromBackend();
-    const id = setInterval(syncFromBackend, 10_000);
+    const id = setInterval(syncFromBackend, 5_000);
     return () => clearInterval(id);
   }, [syncFromBackend]);
 
   const handleAnalysisComplete = async ({ videoUrl, filename, result }) => {
-    const time = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-    analysisCountRef.current += 1;
-    const id = `ANA-${String(analysisCountRef.current).padStart(4, "0")}`;
+    const time = new Date().toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    const id = `ANA-${String(analyses.length + 1).padStart(4, "0")}`;
     const entry = { id, filename, time, videoUrl, result };
 
-    setAnalyses(prev => [...prev, entry]);
+    setAnalyses((prev) => [...prev, entry]);
     setCurrentAnalysis(entry);
 
     try {
@@ -67,50 +106,112 @@ export default function App() {
     setPage("results");
   };
 
-    const handleDispatch = async ({ officerId, instruction, priority, incidentId }) => {
-      try {
-        await api.createDispatch({ officerId, instruction, priority, incidentId });
-        await syncFromBackend();
-      } catch (err) {
-        console.warn("Dispatch failed:", err.message);
-      }
-    };
+  const handleDispatch = async ({ officerId, instruction, priority, incidentId }) => {
+    try {
+      await api.createDispatch({ officerId, instruction, priority, incidentId });
+      await syncFromBackend();
+    } catch (err) {
+      console.warn("Dispatch failed:", err.message);
+    }
+  };
 
-  const handleBack = () => { setCurrentAnalysis(null); setPage("upload"); };
-  const activeIncidents = incidents.filter(i => i.status !== "resolved").length;
-  const criticalCount   = incidents.filter(i => i.status !== "resolved" && i.severity === "critical").length;
+  const handleBack = () => {
+    setCurrentAnalysis(null);
+    setPage("upload");
+  };
+
+  const activeIncidentList = incidents.filter(isActiveIncident);
+  const activeIncidents = activeIncidentList.length;
+  const criticalCount = activeIncidentList.filter(isCriticalIncident).length;
 
   const renderPage = () => {
-    if (page === "results" && currentAnalysis)
+    if (page === "results" && currentAnalysis) {
       return <ResultsPage analysis={currentAnalysis} onBack={handleBack} />;
-    if (page === "upload")
+    }
+
+    if (page === "upload") {
       return <UploadPage onAnalysisComplete={handleAnalysisComplete} />;
-    if (page === "cameras")
+    }
+
+    if (page === "cameras") {
       return <CamerasPage criticalCount={activeIncidents} />;
-    if (page === "incidents")
-      return <IncidentsPage incidents={incidents} groundOfficers={groundOfficers}
-               analyses={analyses} onDispatch={handleDispatch} onNav={setPage} />;
-    if (page === "officers")
-      return <GroundOfficersPage groundOfficers={groundOfficers} dispatches={dispatches}
-               incidents={incidents} onDispatch={handleDispatch} criticalCount={criticalCount} />;
-    if (page === "report")
-      return <ReportPage analyses={analyses} incidents={incidents} dispatches={dispatches}
-               groundOfficers={groundOfficers} criticalCount={criticalCount} goReports={goReports} />;
-    if (page === "shift")
-      return <ShiftReportPage analyses={analyses} incidents={incidents} dispatches={dispatches}
-               goReports={goReports} criticalCount={criticalCount}
-               onLogout={() => {
-                 setLoggedIn(false);
-                 setPage("dashboard");
-                 setAnalyses([]);
-                 setCurrentAnalysis(null);
-                 setIncidents([]);
-                 setGroundOfficers([]);
-                 setDispatches([]);
-                 setGoReports([]);
-               }} />;
-    return <DashboardPage onNav={setPage} analyses={analyses} incidents={incidents}
-             groundOfficers={groundOfficers} dispatches={dispatches} />;
+    }
+
+    if (page === "map") {
+      return (
+       <LocationMapPage
+         incidents={incidents}
+         groundOfficers={groundOfficers}
+         locationMap={locationMap}
+         onNav={setPage}
+         onDispatch={handleDispatch}
+        />
+      );
+    }
+
+    if (page === "incidents") {
+      return (
+        <IncidentsPage
+          incidents={incidents}
+          groundOfficers={groundOfficers}
+          locationMap={locationMap}
+          analyses={analyses}
+          onDispatch={handleDispatch}
+          onNav={setPage}
+        />
+      );
+    }
+
+    if (page === "officers") {
+      return (
+        <GroundOfficersPage
+          groundOfficers={groundOfficers}
+          dispatches={dispatches}
+          incidents={incidents}
+          onDispatch={handleDispatch}
+          criticalCount={criticalCount}
+        />
+      );
+    }
+
+    if (page === "report") {
+      return (
+        <ReportPage
+          analyses={analyses}
+          incidents={incidents}
+          dispatches={dispatches}
+          groundOfficers={groundOfficers}
+          criticalCount={criticalCount}
+          goReports={goReports}
+        />
+      );
+    }
+
+    if (page === "shift") {
+      return (
+        <ShiftReportPage
+          analyses={analyses}
+          incidents={incidents}
+          dispatches={dispatches}
+          goReports={goReports}
+          criticalCount={criticalCount}
+          onLogout={() => {
+            setLoggedIn(false);
+            setPage("dashboard");
+          }}
+        />
+      );
+    }
+
+    return (
+      <DashboardPage
+        onNav={setPage}
+        analyses={analyses}
+        incidents={incidents}
+        groundOfficers={groundOfficers}
+        dispatches={dispatches}
+      />
+    );
   };
 
   if (!loggedIn) {
@@ -128,14 +229,22 @@ export default function App() {
         ::-webkit-scrollbar-thumb { background: #3a3d42; border-radius: 3px; }
       `}</style>
 
-      {/* Backend status indicator */}
       {backendOnline === false && (
-        <div style={{
-          position: "fixed", bottom: 16, right: 16, zIndex: 999,
-          background: "#e24b4a22", border: "1px solid #e24b4a66",
-          borderRadius: 10, padding: "8px 14px", fontSize: 12, color: "#e24b4a",
-          fontFamily: "'Segoe UI', system-ui, sans-serif",
-        }}>
+        <div
+          style={{
+            position: "fixed",
+            bottom: 16,
+            right: 16,
+            zIndex: 999,
+            background: "#e24b4a22",
+            border: "1px solid #e24b4a66",
+            borderRadius: 10,
+            padding: "8px 14px",
+            fontSize: 12,
+            color: "#e24b4a",
+            fontFamily: "'Segoe UI', system-ui, sans-serif",
+          }}
+        >
           ⚠ Backend offline — running in local mode
         </div>
       )}
@@ -145,8 +254,8 @@ export default function App() {
         onNav={setPage}
         incidentCount={activeIncidents}
       />
+
       {renderPage()}
     </div>
-    
   );
 }
