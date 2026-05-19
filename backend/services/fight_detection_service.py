@@ -4,6 +4,8 @@ import os
 from collections import deque
 from typing import Any
 
+from time import monotonic
+
 from extractors.fight_classifier import FightClassifier
 from services.remote_fight_classifier import RemoteFightClassifier
 
@@ -18,6 +20,18 @@ class FightDetectionService:
             "LOCAL_FIGHT_MODEL_PATH",
             "models/fight_classifier.pt",
         )
+
+        self.remote_decision_interval_seconds = float(
+            os.getenv("FIGHT_REMOTE_DECISION_INTERVAL_SECONDS", "2")
+        )
+
+        self.person_missing_grace_frames = int(
+            os.getenv("FIGHT_PERSON_MISSING_GRACE_FRAMES", "3")
+        )
+        self.person_missing_count = 0
+
+        self.last_remote_decision_at: float | None = None
+        self.last_remote_result: dict | None = None
 
         self.clip_frame_count = int(os.getenv("FIGHT_CLIP_FRAME_COUNT", "8"))
         self.frame_buffer = deque(maxlen=self.clip_frame_count)
@@ -39,7 +53,19 @@ class FightDetectionService:
                 f"Warning: unknown FIGHT_DETECTION_MODE={self.mode}. "
                 "Fight detection disabled."
             )
-            self.mode = "off"
+            self.mode = "off"   
+
+    @staticmethod
+    def encode_snapshot_frame(frame) -> str | None:
+        import base64
+        import cv2
+
+        ok, buffer = cv2.imencode(".jpg", frame)
+
+        if not ok:
+            return None
+
+        return base64.b64encode(buffer).decode("utf-8")
 
     def _load_local_classifier(self) -> None:
         try:
@@ -85,9 +111,21 @@ class FightDetectionService:
             return result
 
         if person_count < 2:
-            self.frame_buffer.clear()
-            result = self._empty_result(mode=self.mode, source="not_enough_people")
+            self.person_missing_count += 1
+
+            result = self._empty_result(mode=self.mode, source="not_enough_people_grace")
+            result["buffer_size"] = len(self.frame_buffer)
+            result["person_missing_count"] = self.person_missing_count
+            result["person_missing_grace_frames"] = self.person_missing_grace_frames
+
+            if self.person_missing_count >= self.person_missing_grace_frames:
+                self.reset()
+                result["source"] = "not_enough_people_reset"
+                result["buffer_size"] = 0
+
             return result
+
+        self.person_missing_count = 0
 
         if self.mode == "remote":
             return self._process_remote(frame=frame, camera_id=camera_id)
@@ -111,13 +149,53 @@ class FightDetectionService:
 
         if len(self.frame_buffer) < self.clip_frame_count:
             return result
+        
+        now = monotonic()
+
+        if (
+            self.last_remote_decision_at is not None
+            and now - self.last_remote_decision_at < self.remote_decision_interval_seconds
+        ):
+            cached_result = self.last_remote_result or result
+            cached_result = dict(cached_result)
+            cached_result["source"] = f"{cached_result.get('source', 'remote_cached')}_cached"
+            cached_result["buffer_size"] = len(self.frame_buffer)
+            cached_result["frames_sent"] = 0
+            cached_result["seconds_since_last_remote_call"] = now - self.last_remote_decision_at
+            return cached_result
+        
+        self.last_remote_decision_at = now
 
         remote_result = self.remote_classifier.predict_clip(
             camera_id=camera_id,
             frames=list(self.frame_buffer),
         )
 
-        return {
+        frames = list(self.frame_buffer)
+
+        snapshot_base64 = None
+        snapshot_frame_index = remote_result.get("raw", remote_result).get("snapshot_frame_index")
+        snapshot_strategy = remote_result.get("raw", remote_result).get("snapshot_strategy")
+
+        if remote_result.get("is_fighting") and frames:
+            try:
+                if snapshot_frame_index is None:
+                    snapshot_frame_index = len(frames) // 2
+
+                snapshot_frame_index = int(snapshot_frame_index)
+                snapshot_frame_index = max(0, min(snapshot_frame_index, len(frames) - 1))
+
+                snapshot_base64 = self.encode_snapshot_frame(frames[snapshot_frame_index])
+
+                if not snapshot_strategy:
+                    snapshot_strategy = "middle_of_positive_clip"
+
+            except (TypeError, ValueError, IndexError):
+                snapshot_frame_index = len(frames) // 2
+                snapshot_base64 = self.encode_snapshot_frame(frames[snapshot_frame_index])
+                snapshot_strategy = "middle_of_positive_clip_fallback"
+
+        final_result = {
             "is_fighting": bool(remote_result.get("is_fighting", False)),
             "class_name": remote_result.get("class_name"),
             "confidence": float(remote_result.get("confidence", 0.0)),
@@ -130,7 +208,15 @@ class FightDetectionService:
             "fight_votes": 0,
             "window_size": 0,
             "frame_positive": bool(remote_result.get("is_fighting", False)),
+            "timing": remote_result.get("timing", {}),
+            "seconds_since_last_remote_call": 0.0,
+            "snapshot_base64": snapshot_base64,
+            "snapshot_frame_index": snapshot_frame_index,
+            "snapshot_strategy": snapshot_strategy,
         }
+
+        self.last_remote_result = final_result
+        return final_result
 
     def _process_local(self, frame: Any) -> dict:
         if self.local_classifier is None:
@@ -158,10 +244,14 @@ class FightDetectionService:
             "fight_votes": local_result.get("fight_votes", 0),
             "window_size": local_result.get("window_size", 0),
             "frame_positive": local_result.get("is_fighting_frame", False),
+            "timing": {},
         }
 
     def reset(self) -> None:
         self.frame_buffer.clear()
+        self.last_remote_decision_at = None
+        self.last_remote_result = None
+        self.person_missing_count = 0
 
         if self.local_classifier is not None:
             self.local_classifier.reset()
