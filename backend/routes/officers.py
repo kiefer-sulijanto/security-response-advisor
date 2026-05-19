@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-
+from config.locations import is_valid_location
 from app import state
 from schema import UpdateOfficerRequest
 
@@ -18,6 +18,8 @@ def update_officer(officer_id: str, req: UpdateOfficerRequest):
             if req.status is not None:
                 officer["status"] = req.status
             if req.location is not None:
+                if not is_valid_location(req.location):
+                    raise HTTPException(status_code=400, detail="Invalid officer location")
                 officer["location"] = req.location
             if req.task is not None:
                 officer["task"] = req.task
