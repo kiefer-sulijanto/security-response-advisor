@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Query
@@ -7,7 +7,41 @@ from fastapi import APIRouter, HTTPException, Query
 from app import state
 from schema import CreateDispatchRequest, UpdateDispatchRequest
 
+from datetime import datetime, timezone
+from config.locations import LOCATIONS
+
 router = APIRouter()
+
+def _now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def _get_location_label(location_key: str | None) -> str:
+    if not location_key:
+        return "Unknown Location"
+
+    location = LOCATIONS.get(location_key)
+    if not location:
+        return location_key.replace("_", " ").title()
+
+    return location.get("label", location_key.replace("_", " ").title())
+
+
+def _get_incident_type(incident: dict) -> str:
+    return (
+        incident.get("incidentType")
+        or incident.get("incident_type")
+        or incident.get("name")
+        or "incident"
+    )
+
+
+def _get_incident_location(incident: dict) -> str | None:
+    return (
+        incident.get("location")
+        or incident.get("incidentLocation")
+        or incident.get("incident_location")
+    )
 
 
 @router.get("/api/dispatches")
@@ -19,21 +53,38 @@ def get_dispatches(officerId: Optional[str] = Query(default=None)):
 
 @router.post("/api/dispatches", status_code=201)
 def create_dispatch(req: CreateDispatchRequest):
-    for officer in state.officers_db:
-        if officer["id"] == req.officerId:
-            officer["status"] = "responding"
-            break
+    linked_officer = next(
+    (officer for officer in state.officers_db if officer["id"] == req.officerId),
+    None,
+    )
 
-    for incident in state.incidents_db:
-        if incident["id"] == req.incidentId:
-            incident["assignedTo"] = req.officerId
-            break
+    linked_incident = next(
+        (incident for incident in state.incidents_db if incident["id"] == req.incidentId),
+        None,
+    )
 
-    linked_incident = next((i for i in state.incidents_db if i["id"] == req.incidentId), None)
-    incident_type = linked_incident.get("incidentType", req.incidentId) if linked_incident else req.incidentId
-    incident_location = linked_incident.get("location", req.location) if linked_incident else req.location
+    if linked_officer is None:
+        raise HTTPException(status_code=404, detail="Officer not found")
 
-    now = datetime.now()
+    if linked_incident is None:
+        raise HTTPException(status_code=404, detail="Incident not found")
+
+    incident_type = _get_incident_type(linked_incident)
+    incident_location = _get_incident_location(linked_incident) or req.location
+    location_label = _get_location_label(incident_location)
+
+    linked_officer["status"] = "responding"
+    linked_officer["assignedIncidentId"] = req.incidentId
+    linked_officer["assigned_incident_id"] = req.incidentId
+    linked_officer["task"] = f"Respond to {incident_type} at {location_label}"
+    linked_officer["lastSeenAt"] = _now_iso()
+
+    linked_incident["assignedTo"] = req.officerId
+    linked_incident["assigned_to"] = req.officerId
+    linked_incident["updatedAt"] = _now_iso()
+
+    now = datetime.now(timezone.utc)
+
     dispatch = {
         "id": str(uuid.uuid4()),
         "incidentId": req.incidentId,
@@ -67,11 +118,16 @@ def update_dispatch(dispatch_id: str, req: UpdateDispatchRequest):
                 for officer in state.officers_db:
                     if officer["id"] == dispatch["officerId"]:
                         officer["status"] = "standby"
+                        officer["assignedIncidentId"] = None
+                        officer["assigned_incident_id"] = None
+                        officer["lastSeenAt"] = _now_iso()
                         break
                 for incident in state.incidents_db:
                     if incident["id"] == dispatch.get("incidentId"):
                         incident["status"] = "resolved"
+                        incident["updatedAt"] = _now_iso()
                         break
+                
 
             return dispatch
     raise HTTPException(status_code=404, detail="Dispatch not found")

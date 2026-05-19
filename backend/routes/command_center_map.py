@@ -1,5 +1,7 @@
 from fastapi import APIRouter
 
+from datetime import datetime, timezone
+
 from config.locations import LOCATIONS
 from app import state
 
@@ -10,6 +12,8 @@ def _is_active_incident(incident: dict) -> bool:
     status = str(incident.get("status", "")).lower()
     return status not in {"resolved", "closed", "dismissed"}
 
+def _now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
 
 def _get_incident_location(incident: dict) -> str | None:
     return (
@@ -67,6 +71,7 @@ def _format_officer_for_map(officer: dict) -> dict:
             officer.get("assignedIncidentId")
             or officer.get("assigned_incident_id")
         ),
+        "lastSeenAt": officer.get("lastSeenAt") or officer.get("last_seen_at"),
     }
 
 
@@ -119,5 +124,6 @@ def get_command_center_map():
         )
 
     return {
-        "floors": list(floors_by_key.values())
+        "lastUpdated": _now_iso(),
+        "floors": list(floors_by_key.values()),
     }

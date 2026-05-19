@@ -1,10 +1,17 @@
 from fastapi import APIRouter, HTTPException
-from config.locations import is_valid_location
 from app import state
 from schema import UpdateOfficerRequest
 
+from datetime import datetime, timezone
+
+from config.locations import is_valid_location
+
+
 router = APIRouter()
 
+
+def _now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
 
 @router.get("/api/officers")
 def get_officers():
@@ -17,11 +24,18 @@ def update_officer(officer_id: str, req: UpdateOfficerRequest):
         if officer["id"] == officer_id:
             if req.status is not None:
                 officer["status"] = req.status
+                officer["lastSeenAt"] = _now_iso()
             if req.location is not None:
                 if not is_valid_location(req.location):
-                    raise HTTPException(status_code=400, detail="Invalid officer location")
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Invalid officer location: {req.location}",
+                    )
+
                 officer["location"] = req.location
+                officer["lastSeenAt"] = _now_iso()
             if req.task is not None:
                 officer["task"] = req.task
+                officer["lastSeenAt"] = _now_iso()
             return officer
     raise HTTPException(status_code=404, detail="Officer not found")
