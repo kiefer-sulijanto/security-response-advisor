@@ -12,7 +12,8 @@ LABEL_TO_EVENTS = {
 LOCATION_ALLOWED_HOURS = {
     "server_room": {"start": 8, "end": 18},
     "lobby": {"start": 6, "end": 22},
-    "main_gate": {"start": 6, "end": 23},
+    "gathering_area": {"start": 6, "end": 23},
+    "parking_area": {"start": 6, "end": 23},
 }
 
 
