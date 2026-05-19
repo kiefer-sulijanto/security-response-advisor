@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from time import perf_counter
+
 try:
     from recommendation_AI.incident_analysis import get_advisory
 except ImportError:
@@ -10,13 +12,35 @@ def build_advisory(incident_dict: dict, enable_advisory: bool) -> dict:
     if not enable_advisory or get_advisory is None:
         return fallback_advisory(incident_dict, "Recommendation engine disabled or unavailable.")
 
+    advisory_start = perf_counter()
+
     try:
         advisory = get_advisory(incident_dict)
     except Exception as e:
-        return fallback_advisory(incident_dict, f"Recommendation engine failed: {str(e)}")
+        advisory_seconds = perf_counter() - advisory_start
+        print(f"[TIMING] OpenAI advisory failed after {advisory_seconds:.3f}s")
+        fallback = fallback_advisory(incident_dict, f"Recommendation engine failed: {str(e)}")
+        fallback["_timing"] = {
+            "openai_advisory_seconds": advisory_seconds,
+        }
+        return fallback
+
+    advisory_seconds = perf_counter() - advisory_start
+    print(
+        f"[TIMING] OpenAI advisory for {incident_dict.get('name')} "
+        f"took {advisory_seconds:.3f}s"
+    )
 
     if not isinstance(advisory, dict):
-        return fallback_advisory(incident_dict, "Recommendation engine returned invalid response.")
+        fallback = fallback_advisory(incident_dict, "Recommendation engine returned invalid response.")
+        fallback["_timing"] = {
+            "openai_advisory_seconds": advisory_seconds,
+        }
+        return fallback
+
+    advisory["_timing"] = {
+        "openai_advisory_seconds": advisory_seconds,
+    }
 
     return advisory
 
