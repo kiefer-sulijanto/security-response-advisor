@@ -1,9 +1,12 @@
 const BASE = import.meta.env.VITE_API_BASE || "http://localhost:8000/api";
 
-async function req(method, path, body) {
+async function req(method, path, body, extraHeaders = {}) {
   const res = await fetch(`${BASE}${path}`, {
     method,
-    headers: body ? { "Content-Type": "application/json" } : {},
+    headers: {
+      ...(body ? { "Content-Type": "application/json" } : {}),
+      ...extraHeaders,
+    },
     body: body ? JSON.stringify(body) : undefined,
   });
   if (!res.ok) {
@@ -28,5 +31,7 @@ export const api = {
   createReport: (data) => req("POST", "/reports", data),
 
   // Reset demo state
-  resetDemoState: () => req("POST", "/demo/reset"),
+  resetDemoState: () => req("POST", "/demo/reset", null, {
+    "X-Demo-Secret": import.meta.env.VITE_DEMO_RESET_SECRET || "",
+  }),
 };

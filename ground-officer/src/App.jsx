@@ -5,10 +5,7 @@ import AlertsPage   from './pages/AlertsPage.jsx'
 import ReportPage   from './pages/ReportPage.jsx'
 import HandoverPage from './pages/HandoverPage.jsx'
 import BottomNav    from './components/BottomNav.jsx'
-import { INITIAL_TASKS } from './constants/mockData.js'
 import { api } from './services/api.js'
-
-const TASKS_VERSION = '2'  // bump this whenever INITIAL_TASKS changes
 
 // Map a backend dispatch object → alert shape used by AlertsPage / HomePage
 function dispatchToAlert(d) {
@@ -28,17 +25,6 @@ export default function App() {
   const [officer, setOfficer] = useState(null)
   const [page, setPage]       = useState('home')
   const [alerts, setAlerts]   = useState([])          // live from backend
-  const [tasks, setTasks]     = useState(() => {
-    try {
-      const savedVersion = localStorage.getItem('certis_tasks_version')
-      const saved = localStorage.getItem('certis_tasks')
-      if (saved && savedVersion === TASKS_VERSION) return JSON.parse(saved)
-      // Version mismatch — reset to latest INITIAL_TASKS
-      localStorage.removeItem('certis_tasks')
-      localStorage.setItem('certis_tasks_version', TASKS_VERSION)
-      return INITIAL_TASKS
-    } catch { return INITIAL_TASKS }
-  })
   const [reports, setReports] = useState([])
   const [backendOnline, setBackendOnline] = useState(null)
   const [patrolLocation, setPatrolLocation] = useState(null)
@@ -111,15 +97,6 @@ export default function App() {
     setReportErrors({})
   }
 
-  const toggleTask = (id) => {
-    setTasks(prev => {
-      const updated = prev.map(t => t.id === id ? { ...t, done: !t.done } : t)
-      localStorage.setItem('certis_tasks', JSON.stringify(updated))
-      localStorage.setItem('certis_tasks_version', TASKS_VERSION)
-      return updated
-    })
-  }
-
   const addReport = async (report) => {
     const timestamp = new Date().toLocaleTimeString('en-SG', { hour: '2-digit', minute: '2-digit' })
     const local = { ...report, id: `r${Date.now()}`, timestamp }
@@ -157,10 +134,8 @@ export default function App() {
       <CurrentPage
         officer={officer}
         alerts={alerts}
-        tasks={tasks}
         reports={reports}
         onUpdateAlertStatus={updateAlertStatus}
-        onToggleTask={toggleTask}
         onAddReport={addReport}
         onNavigate={setPage}
         unreadAlerts={unreadAlerts}
