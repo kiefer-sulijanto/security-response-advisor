@@ -152,10 +152,16 @@ export async function runPipelineMultiFrameAnalysis(frames, meta = {}) {
 
   const earlyStopFlagLevels = meta.earlyStopFlagLevels || ["red"];
   const earlyStopHitThreshold = meta.earlyStopHitThreshold ?? 2;
+  const analysisBaseMs = Date.now();
 
   for (const frame of frames) {
     const imageBase64 = typeof frame === "string" ? frame : frame?.imageBase64;
     const timestamp = typeof frame === "object" ? frame?.timestamp : undefined;
+
+    const isoTimestamp =
+      typeof timestamp === "number"
+        ? new Date(analysisBaseMs + timestamp * 1000).toISOString()
+        : undefined;
 
     const response = await api.processCctvFrame({
       image_base64: imageBase64,
@@ -163,6 +169,7 @@ export async function runPipelineMultiFrameAnalysis(frames, meta = {}) {
       location: meta.location || "server_room",
       confidence_threshold: meta.confidence_threshold ?? 0.45,
       frame_timestamp_seconds: timestamp,
+      timestamp: isoTimestamp,
       include_debug: true,
     });
 
