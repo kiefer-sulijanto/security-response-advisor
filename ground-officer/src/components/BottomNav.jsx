@@ -1,9 +1,8 @@
 const NAV = [
   { id: 'home',     label: 'Home',     icon: IconHome },
-  { id: 'tasks',    label: 'Tasks',    icon: IconTasks },
   { id: 'alerts',   label: 'Alerts',   icon: IconAlerts },
   { id: 'report',   label: 'Report',   icon: IconReport },
-  { id: 'handover', label: 'Handover', icon: IconHandover },
+  { id: 'handover', label: 'Sign Off', icon: IconHandover },
 ]
 
 export default function BottomNav({ current, onNavigate, unreadAlerts }) {

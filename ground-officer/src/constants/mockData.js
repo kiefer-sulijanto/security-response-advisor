@@ -32,7 +32,13 @@ export const INCIDENT_TYPES = [
 ]
 
 export const LOCATIONS = [
-  'Main Entrance', 'Front Door', 'Basement','Canteen','Smoking Area',
-  'Back Door', 'Staircase','Meeting Room','Server Room','Rooftop',
-  'Hallway','Storage','Control Room', 'Parking Lot','Elevators'
+  // Floor 1
+  'Server Room', 'Meeting Room', 'Multi-Purpose Room', 'Gathering Area',
+  'Conference Room', 'Canteen', 'Lobby',
+  // Floor 2
+  'CEO Office', 'Manager Office', 'Executive Office', 'Office Area', 'Control Room',
+  // Underground
+  'Parking Lot', 'Storage',
+  // Legacy / outdoor
+  'Main Entrance', 'Front Door', 'Back Door', 'Smoking Area', 'Rooftop', 'Hallway',
 ]

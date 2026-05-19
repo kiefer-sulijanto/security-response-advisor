@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import LoginPage    from './pages/LoginPage.jsx'
 import HomePage     from './pages/HomePage.jsx'
-import TasksPage    from './pages/TasksPage.jsx'
 import AlertsPage   from './pages/AlertsPage.jsx'
 import ReportPage   from './pages/ReportPage.jsx'
 import HandoverPage from './pages/HandoverPage.jsx'
@@ -42,6 +41,11 @@ export default function App() {
   })
   const [reports, setReports] = useState([])
   const [backendOnline, setBackendOnline] = useState(null)
+  const [patrolLocation, setPatrolLocation] = useState(null)
+  const [patrolFloor, setPatrolFloor]       = useState('floor1')
+  const [reportForm,      setReportForm]      = useState({ type: '', location: '', description: '', severity: 'medium' })
+  const [reportSubmitted, setReportSubmitted] = useState(false)
+  const [reportErrors,    setReportErrors]    = useState({})
 
   // Poll backend every 8 seconds for new dispatches after login
   const syncAlerts = useCallback(async () => {
@@ -65,7 +69,7 @@ export default function App() {
   const handleLogin = async (officerData) => {
     setOfficer(officerData)
     try {
-      await api.updateMyStatus(officerData.id, { online: true })
+      await api.updateMyStatus(officerData.id, { status: 'patrolling', task: 'On Patrol', online: true })
     } catch (err) {
       console.warn('Could not set online status:', err.message)
     }
@@ -93,7 +97,7 @@ export default function App() {
   const handleLogout = async () => {
     if (officer) {
       try {
-        await api.updateMyStatus(officer.id, { status: "standby", task: "Standby — awaiting assignment", online: false })
+        await api.updateMyStatus(officer.id, { status: 'offline', task: '', online: false })
       } catch (err) {
         console.warn('Could not reset officer status:', err.message)
       }
@@ -102,6 +106,9 @@ export default function App() {
     setPage('home')
     setAlerts([])
     setReports([])
+    setReportForm({ type: '', location: '', description: '', severity: 'medium' })
+    setReportSubmitted(false)
+    setReportErrors({})
   }
 
   const toggleTask = (id) => {
@@ -132,7 +139,7 @@ export default function App() {
     }
   }
 
-  const pages = { home: HomePage, tasks: TasksPage, alerts: AlertsPage, report: ReportPage, handover: HandoverPage }
+  const pages = { home: HomePage, alerts: AlertsPage, report: ReportPage, handover: HandoverPage }
   const CurrentPage = pages[page] || HomePage
 
   return (
@@ -158,6 +165,16 @@ export default function App() {
         onNavigate={setPage}
         unreadAlerts={unreadAlerts}
         onLogout={handleLogout}
+        patrolLocation={patrolLocation}
+        onSetPatrolLocation={setPatrolLocation}
+        patrolFloor={patrolFloor}
+        onSetPatrolFloor={setPatrolFloor}
+        reportForm={reportForm}
+        onSetReportForm={setReportForm}
+        reportSubmitted={reportSubmitted}
+        onSetReportSubmitted={setReportSubmitted}
+        reportErrors={reportErrors}
+        onSetReportErrors={setReportErrors}
       />
       <BottomNav current={page} onNavigate={setPage} unreadAlerts={unreadAlerts} />
     </div>
