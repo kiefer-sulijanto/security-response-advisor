@@ -1,15 +1,11 @@
 import { useState, useEffect, useCallback } from 'react'
 import LoginPage    from './pages/LoginPage.jsx'
 import HomePage     from './pages/HomePage.jsx'
-import TasksPage    from './pages/TasksPage.jsx'
 import AlertsPage   from './pages/AlertsPage.jsx'
 import ReportPage   from './pages/ReportPage.jsx'
 import HandoverPage from './pages/HandoverPage.jsx'
 import BottomNav    from './components/BottomNav.jsx'
-import { INITIAL_TASKS } from './constants/mockData.js'
 import { api } from './services/api.js'
-
-const TASKS_VERSION = '2'  // bump this whenever INITIAL_TASKS changes
 
 // Map a backend dispatch object → alert shape used by AlertsPage / HomePage
 function dispatchToAlert(d) {
@@ -29,19 +25,13 @@ export default function App() {
   const [officer, setOfficer] = useState(null)
   const [page, setPage]       = useState('home')
   const [alerts, setAlerts]   = useState([])          // live from backend
-  const [tasks, setTasks]     = useState(() => {
-    try {
-      const savedVersion = localStorage.getItem('certis_tasks_version')
-      const saved = localStorage.getItem('certis_tasks')
-      if (saved && savedVersion === TASKS_VERSION) return JSON.parse(saved)
-      // Version mismatch — reset to latest INITIAL_TASKS
-      localStorage.removeItem('certis_tasks')
-      localStorage.setItem('certis_tasks_version', TASKS_VERSION)
-      return INITIAL_TASKS
-    } catch { return INITIAL_TASKS }
-  })
   const [reports, setReports] = useState([])
   const [backendOnline, setBackendOnline] = useState(null)
+  const [patrolLocation, setPatrolLocation] = useState(null)
+  const [patrolFloor, setPatrolFloor]       = useState('floor1')
+  const [reportForm,      setReportForm]      = useState({ type: '', location: '', description: '', severity: 'medium' })
+  const [reportSubmitted, setReportSubmitted] = useState(false)
+  const [reportErrors,    setReportErrors]    = useState({})
 
   // Poll backend every 8 seconds for new dispatches after login
   const syncAlerts = useCallback(async () => {
@@ -65,7 +55,7 @@ export default function App() {
   const handleLogin = async (officerData) => {
     setOfficer(officerData)
     try {
-      await api.updateMyStatus(officerData.id, { online: true })
+      await api.updateMyStatus(officerData.id, { status: 'patrolling', task: 'On Patrol', online: true })
     } catch (err) {
       console.warn('Could not set online status:', err.message)
     }
@@ -93,7 +83,7 @@ export default function App() {
   const handleLogout = async () => {
     if (officer) {
       try {
-        await api.updateMyStatus(officer.id, { status: "standby", task: "Standby — awaiting assignment", online: false })
+        await api.updateMyStatus(officer.id, { status: 'offline', task: '', online: false })
       } catch (err) {
         console.warn('Could not reset officer status:', err.message)
       }
@@ -102,15 +92,9 @@ export default function App() {
     setPage('home')
     setAlerts([])
     setReports([])
-  }
-
-  const toggleTask = (id) => {
-    setTasks(prev => {
-      const updated = prev.map(t => t.id === id ? { ...t, done: !t.done } : t)
-      localStorage.setItem('certis_tasks', JSON.stringify(updated))
-      localStorage.setItem('certis_tasks_version', TASKS_VERSION)
-      return updated
-    })
+    setReportForm({ type: '', location: '', description: '', severity: 'medium' })
+    setReportSubmitted(false)
+    setReportErrors({})
   }
 
   const addReport = async (report) => {
@@ -132,7 +116,7 @@ export default function App() {
     }
   }
 
-  const pages = { home: HomePage, tasks: TasksPage, alerts: AlertsPage, report: ReportPage, handover: HandoverPage }
+  const pages = { home: HomePage, alerts: AlertsPage, report: ReportPage, handover: HandoverPage }
   const CurrentPage = pages[page] || HomePage
 
   return (
@@ -150,14 +134,22 @@ export default function App() {
       <CurrentPage
         officer={officer}
         alerts={alerts}
-        tasks={tasks}
         reports={reports}
         onUpdateAlertStatus={updateAlertStatus}
-        onToggleTask={toggleTask}
         onAddReport={addReport}
         onNavigate={setPage}
         unreadAlerts={unreadAlerts}
         onLogout={handleLogout}
+        patrolLocation={patrolLocation}
+        onSetPatrolLocation={setPatrolLocation}
+        patrolFloor={patrolFloor}
+        onSetPatrolFloor={setPatrolFloor}
+        reportForm={reportForm}
+        onSetReportForm={setReportForm}
+        reportSubmitted={reportSubmitted}
+        onSetReportSubmitted={setReportSubmitted}
+        reportErrors={reportErrors}
+        onSetReportErrors={setReportErrors}
       />
       <BottomNav current={page} onNavigate={setPage} unreadAlerts={unreadAlerts} />
     </div>

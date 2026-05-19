@@ -21,7 +21,7 @@
 
 // change the strcuture with the real floorplan later (dummy only)
 export const CAMERA_CONFIG = [
-  { id: "cam_01", name: "Cam 1", location: "server_room",       source: "stream", streamUrl: "http://172.20.10.2:4747/video", processingIntervalMs: 500 },
+  { id: "cam_01", name: "Cam 1", location: "server_room",       source: "stream", streamUrl: "http://192.168.1.43:4747/video", processingIntervalMs: 500 },
   { id: "cam_02", name: "Cam 2", location: "lobby",             source: "stream", streamUrl: "http://172.20.10.3:4747/video", processingIntervalMs: 500 },
   { id: "cam_03", name: "Cam 3", location: "gathering_area",    source: "stream", streamUrl: "http://172.20.10.4:4747/video", processingIntervalMs: 500 },
 

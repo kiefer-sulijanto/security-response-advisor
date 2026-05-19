@@ -12,6 +12,8 @@ from config.locations import LOCATIONS
 
 router = APIRouter()
 
+VALID_DISPATCH_STATUSES = {"unread", "acknowledged", "in_progress", "resolved"}
+
 def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
@@ -104,6 +106,12 @@ def create_dispatch(req: CreateDispatchRequest):
 
 @router.patch("/api/dispatches/{dispatch_id}")
 def update_dispatch(dispatch_id: str, req: UpdateDispatchRequest):
+    if req.status not in VALID_DISPATCH_STATUSES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid status '{req.status}'. Must be one of: {sorted(VALID_DISPATCH_STATUSES)}",
+        )
+
     for dispatch in state.dispatches_db:
         if dispatch["id"] == dispatch_id:
             dispatch["status"] = req.status
@@ -112,6 +120,7 @@ def update_dispatch(dispatch_id: str, req: UpdateDispatchRequest):
                 for incident in state.incidents_db:
                     if incident["id"] == dispatch.get("incidentId"):
                         incident["status"] = "in_progress"
+                        incident["updatedAt"] = _now_iso()
                         break
 
             elif req.status == "resolved":
@@ -120,6 +129,7 @@ def update_dispatch(dispatch_id: str, req: UpdateDispatchRequest):
                         officer["status"] = "standby"
                         officer["assignedIncidentId"] = None
                         officer["assigned_incident_id"] = None
+                        officer["task"] = None
                         officer["lastSeenAt"] = _now_iso()
                         break
                 for incident in state.incidents_db:

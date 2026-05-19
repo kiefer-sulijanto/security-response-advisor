@@ -6,7 +6,7 @@ from config.locations import LOCATIONS
 
 router = APIRouter(prefix="/api/incidents", tags=["Incident Recommendations"])
 
-AVAILABLE_OFFICER_STATUSES = {"standby", "available"}
+AVAILABLE_OFFICER_STATUSES = {"standby"}
 
 
 def _get_location_label(location_key: str | None) -> str:

@@ -59,6 +59,12 @@ html, body {
 
 .page-scroll::-webkit-scrollbar { display: none; }
 
+/* Themed scrollbar for textareas */
+textarea::-webkit-scrollbar        { width: 4px; }
+textarea::-webkit-scrollbar-track  { background: transparent; }
+textarea::-webkit-scrollbar-thumb  { background: #2d3f55; border-radius: 4px; }
+textarea::-webkit-scrollbar-thumb:hover { background: #F07820; }
+
 /* Cards */
 .card {
   background: var(--card);
@@ -82,12 +88,23 @@ html, body {
   transition: opacity 0.15s, transform 0.1s;
   user-select: none;
 }
-.btn:active { transform: scale(0.97); opacity: 0.85; }
+.btn:hover   { opacity: 0.82; }
+.btn:active  { transform: scale(0.97); opacity: 0.75; }
 .btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { background: #d4610f; opacity: 1; }
 .btn-outline { background: transparent; color: var(--text); border: 1px solid var(--border); }
+.btn-outline:hover { border-color: var(--accent); color: var(--accent); opacity: 1; }
 .btn-danger  { background: var(--critical); color: #fff; }
 .btn-success { background: var(--low); color: #fff; }
 .btn-full    { width: 100%; }
+
+/* Generic hover for any custom-styled button that wants the orange chip effect */
+.chip-hover:hover {
+  border-color: rgba(240,120,32,0.5) !important;
+  color: #F07820 !important;
+  background: rgba(240,120,32,0.1) !important;
+  opacity: 1;
+}
 
 /* Badges */
 .badge {

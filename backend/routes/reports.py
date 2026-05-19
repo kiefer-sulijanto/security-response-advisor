@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import APIRouter
 
@@ -16,7 +16,7 @@ def get_reports():
 
 @router.post("/api/reports", status_code=201)
 def create_report(req: CreateReportRequest):
-    now = datetime.now()
+    now = datetime.now(timezone.utc)
     report = {
         "id": str(uuid.uuid4()),
         "officerId": req.officerId,

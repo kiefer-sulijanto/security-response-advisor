@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException
 
@@ -69,7 +69,7 @@ def create_incident(req: CreateIncidentRequest):
         "aiDetails": req.aiDetails,
         "status": "open",
         "assignedTo": None,
-        "createdAt": datetime.now().isoformat(),
+        "createdAt": datetime.now(timezone.utc).isoformat(),
         "snapshot_base64": req.snapshot_base64,
     }
     state.incidents_db.append(incident)

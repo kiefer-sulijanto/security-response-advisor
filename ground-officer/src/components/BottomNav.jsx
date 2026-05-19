@@ -1,9 +1,8 @@
 const NAV = [
   { id: 'home',     label: 'Home',     icon: IconHome },
-  { id: 'tasks',    label: 'Tasks',    icon: IconTasks },
   { id: 'alerts',   label: 'Alerts',   icon: IconAlerts },
   { id: 'report',   label: 'Report',   icon: IconReport },
-  { id: 'handover', label: 'Handover', icon: IconHandover },
+  { id: 'handover', label: 'Sign Off', icon: IconHandover },
 ]
 
 export default function BottomNav({ current, onNavigate, unreadAlerts }) {
@@ -76,15 +75,6 @@ function IconHome({ size, color }) {
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
       <path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/>
       <path d="M9 21V12h6v9"/>
-    </svg>
-  )
-}
-function IconTasks({ size, color }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-      <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/>
-      <rect x="9" y="3" width="6" height="4" rx="1"/>
-      <path d="M9 12l2 2 4-4"/>
     </svg>
   )
 }
