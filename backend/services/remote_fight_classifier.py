@@ -4,6 +4,8 @@ import base64
 import os
 from typing import Any
 
+from time import perf_counter
+
 import cv2
 import requests
 
@@ -33,29 +35,38 @@ class RemoteFightClassifier:
         return base64.b64encode(buffer).decode("utf-8")
 
     def predict_clip(self, camera_id: str, frames: list[Any]) -> dict:
+        total_start = perf_counter()
+
         if not self.enabled:
             return {
                 "is_fighting": False,
                 "class_name": "disabled",
                 "confidence": 0.0,
                 "source": "remote_disabled",
+                "timing": {
+                    "remote_total_seconds": perf_counter() - total_start,
+                },
             }
 
         try:
+            encode_start = perf_counter()
             frames_base64 = [self.encode_frame(frame) for frame in frames]
+            encode_seconds = perf_counter() - encode_start
 
             payload = {
                 "camera_id": camera_id,
                 "frames_base64": frames_base64,
             }
 
+            request_start = perf_counter()
             response = requests.post(
                 self.api_url,
                 json=payload,
                 timeout=self.timeout_seconds,
             )
-            response.raise_for_status()
+            request_seconds = perf_counter() - request_start
 
+            response.raise_for_status()
             data = response.json()
 
             return {
@@ -64,6 +75,11 @@ class RemoteFightClassifier:
                 "confidence": float(data.get("confidence", 0.0)),
                 "source": data.get("source", "remote_fight_classifier"),
                 "raw": data,
+                "timing": {
+                    "remote_encode_seconds": encode_seconds,
+                    "remote_request_seconds": request_seconds,
+                    "remote_total_seconds": perf_counter() - total_start,
+                },
             }
 
         except Exception as e:
@@ -73,4 +89,7 @@ class RemoteFightClassifier:
                 "confidence": 0.0,
                 "source": "remote_fight_classifier",
                 "error": str(e),
+                "timing": {
+                    "remote_total_seconds": perf_counter() - total_start,
+                },
             }

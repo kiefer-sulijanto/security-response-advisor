@@ -3,6 +3,8 @@ from datetime import datetime
 
 from fastapi import APIRouter, HTTPException
 
+from time import perf_counter
+
 from app import state
 from app.helpers import (
     _cache_latest_cctv_snapshot,
@@ -36,17 +38,25 @@ def pipeline_cctv(req: CCTVDetectionRequest):
 
 @router.post("/api/pipeline/cctv/frame")
 def pipeline_cctv_frame(req: CCTVFrameRequest):
+    request_start = perf_counter()
+    timing = {}
+
     try:
+        decode_start = perf_counter()
         frame = _decode_base64_image(req.image_base64)
+        timing["decode_seconds"] = perf_counter() - decode_start
     except (ValueError, TypeError, base64.binascii.Error) as e:
         raise HTTPException(status_code=400, detail=f"Invalid frame payload: {str(e)}")
 
+    cache_start = perf_counter()
     _cache_latest_cctv_snapshot(req.camera_id, req.location, req.image_base64)
+    timing["snapshot_cache_seconds"] = perf_counter() - cache_start
 
     timestamp_override = req.timestamp
     if not timestamp_override:
         timestamp_override = datetime.now().isoformat(timespec="seconds")
 
+    pipeline_start = perf_counter()
     pipeline_output = state.pipeline.process_cctv_frame(
         frame=frame,
         camera_id=req.camera_id,
@@ -55,16 +65,26 @@ def pipeline_cctv_frame(req: CCTVFrameRequest):
         timestamp_override=timestamp_override,
         include_debug=req.include_debug,
     )
+    timing["pipeline_seconds"] = perf_counter() - pipeline_start
 
     results = pipeline_output.get("results", [])
-    created = _persist_pipeline_results(results, "CCTV Frame Pipeline", req.image_base64)
 
-    return {
+    persist_start = perf_counter()
+    created = _persist_pipeline_results(results, "CCTV Frame Pipeline", req.image_base64)
+    timing["incident_persist_seconds"] = perf_counter() - persist_start
+
+    timing["total_seconds"] = perf_counter() - request_start
+
+    response = {
         "results": results,
         "incidents_created": created,
         "debug": pipeline_output.get("debug", {}),
     }
 
+    if req.include_debug:
+        response["timing"] = timing
+
+    return response
 
 @router.post("/api/pipeline/access")
 def pipeline_access(req: AccessLogRequest):

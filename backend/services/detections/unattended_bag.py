@@ -84,13 +84,29 @@ class UnattendedBagDetector:
                     "first_seen": timestamp,
                     "last_seen": timestamp,
                     "last_emission": None,
+                    "unattended_since": None,
                 })
 
         synthetic: list[dict] = []
 
         for tracked in tracked_bags:
-            dwell_time = (tracked["last_seen"] - tracked["first_seen"]).total_seconds()
-            if dwell_time < self.config["dwell_seconds"]:
+            nearest_dist = float("inf")
+            for person in person_detections:
+                dist = distance_between_centers(tracked["center"], person.get("center"))
+                if dist < nearest_dist:
+                    nearest_dist = dist
+
+            if nearest_dist <= self.config["owner_distance_threshold_px"]:
+                # Owner is nearby — reset unattended timer
+                tracked["unattended_since"] = None
+                continue
+
+            # No nearby person — start timer if not already running
+            if tracked["unattended_since"] is None:
+                tracked["unattended_since"] = timestamp
+
+            unattended_duration = (timestamp - tracked["unattended_since"]).total_seconds()
+            if unattended_duration < self.config["dwell_seconds"]:
                 continue
 
             last_emission = tracked.get("last_emission")
@@ -99,15 +115,6 @@ class UnattendedBagDetector:
                 or (timestamp - last_emission).total_seconds() >= self.config["cooldown_seconds"]
             )
             if not cooled_down:
-                continue
-
-            nearest_dist = float("inf")
-            for person in person_detections:
-                dist = distance_between_centers(tracked["center"], person.get("center"))
-                if dist < nearest_dist:
-                    nearest_dist = dist
-
-            if nearest_dist <= self.config["owner_distance_threshold_px"]:
                 continue
 
             synthetic.append({
@@ -120,9 +127,9 @@ class UnattendedBagDetector:
                 "center": tracked["center"],
                 "in_restricted_area": False,
                 "bag_type": tracked["bag_type"],
-                "unattended_duration_seconds": int(dwell_time),
+                "unattended_duration_seconds": int(unattended_duration),
                 "nearest_person_distance": nearest_dist if nearest_dist != float("inf") else None,
-                "debug_reason": f"unattended_bag:{int(dwell_time)}s_no_nearby_person",
+                "debug_reason": f"unattended_bag:{int(unattended_duration)}s_no_nearby_person",
             })
             tracked["last_emission"] = timestamp
 

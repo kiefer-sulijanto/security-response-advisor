@@ -89,7 +89,15 @@ def _persist_pipeline_results(results: list[dict], source_name: str, snapshot_ba
                 camera_id = metadata["camera_id"]
                 break
 
-        effective_snapshot = snapshot_base64
+        effective_snapshot = None
+        for event in incident_data.get("triggering_events", []):
+            event_meta = event.get("metadata", {}) or {}
+            if event_meta.get("snapshot_base64"):
+                effective_snapshot = event_meta["snapshot_base64"]
+                break
+
+        if not effective_snapshot:
+            effective_snapshot = snapshot_base64
         if not effective_snapshot:
             effective_snapshot = _get_latest_cctv_snapshot(camera_id, incident_location)
 

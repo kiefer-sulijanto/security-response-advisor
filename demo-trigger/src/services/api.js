@@ -33,8 +33,13 @@ async function req(method, path, body, extraHeaders = {}) {
 
 export const api = {
   processAccessLog: (data) => req("POST", "/pipeline/access", data),
+
+  processCctvDetection: (data) => req("POST", "/pipeline/cctv", data),
+
   manualTrigger: (data) => req("POST", "/pipeline/manual-event", data),
-  resetDemoState: () => req("POST", "/demo/reset", null, {
-    "X-Demo-Secret": import.meta.env.VITE_DEMO_RESET_SECRET || "",
-  }),
+
+  resetDemoState: () =>
+    req("POST", "/demo/reset", null, {
+      "X-Demo-Secret": import.meta.env.VITE_DEMO_RESET_SECRET || "",
+    }),
 };

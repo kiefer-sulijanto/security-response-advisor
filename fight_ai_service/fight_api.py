@@ -105,6 +105,13 @@ def predict_fight_clip(req: FightClipRequest):
 
     is_fighting = class_name == "fighting" and confidence >= 0.75
 
+    snapshot_frame_index = None
+    snapshot_strategy = None
+
+    if is_fighting:
+        snapshot_frame_index = len(frames) // 2
+        snapshot_strategy = "middle_of_positive_clip"
+
     return {
         "camera_id": req.camera_id,
         "class_name": class_name,
@@ -113,5 +120,6 @@ def predict_fight_clip(req: FightClipRequest):
         "source": "local_videomae_service",
         "frames_received": len(req.frames_base64),
         "frames_used": len(frames),
-        "device": str(device),
+        "snapshot_frame_index": snapshot_frame_index,
+        "snapshot_strategy": snapshot_strategy,
     }

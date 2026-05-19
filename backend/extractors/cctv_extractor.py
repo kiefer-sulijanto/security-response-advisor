@@ -3,6 +3,8 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
+from time import perf_counter
+
 from ultralytics import YOLO
 
 from services.fight_detection_service import FightDetectionService
@@ -83,7 +85,11 @@ class CCTVExtractor:
         timestamp_value = timestamp_override or datetime.now().isoformat(timespec="seconds")
 
         try:
+            
+            yolo_start = perf_counter()
             results = self.model(frame, classes=[0, 24, 26, 28], conf=threshold, verbose=False)
+            yolo_seconds = perf_counter() - yolo_start
+        
         except (RuntimeError, TypeError, ValueError) as e:
             return {
                 "detections": [],
@@ -157,11 +163,14 @@ class CCTVExtractor:
         total_people = sum(item.get("person_count", 0) for item in debug_results)
         total_bags = sum(item.get("bag_count", 0) for item in debug_results)
 
+        fight_start = perf_counter()
         fight_result = self.fight_detection_service.process_frame(
             frame=frame,
             camera_id=self.camera_id,
             person_count=total_people,
         )
+        fight_detection_seconds = perf_counter() - fight_start
+        fight_timing = fight_result.get("timing", {})
 
         if fight_result.get("is_fighting"):
             detections.append(
@@ -181,6 +190,9 @@ class CCTVExtractor:
                     "fight_frames_sent": fight_result.get("frames_sent"),
                     "fight_votes": fight_result.get("fight_votes"),
                     "fight_window_size": fight_result.get("window_size"),
+                    "snapshot_base64": fight_result.get("snapshot_base64"),
+                    "snapshot_frame_index": fight_result.get("snapshot_frame_index"),
+                    "snapshot_strategy": fight_result.get("snapshot_strategy"),
                 }
             )
         
@@ -195,6 +207,8 @@ class CCTVExtractor:
                 "total_detections": len(detections),
                 "person_count": total_people,
                 "bag_count": total_bags,
+                "yolo_seconds": yolo_seconds,
+                "fight_detection_seconds": fight_detection_seconds,
                 "fight_mode": fight_result.get("mode"),
                 "fight_class": fight_result.get("class_name"),
                 "fight_confidence": fight_result.get("confidence"),
@@ -206,6 +220,12 @@ class CCTVExtractor:
                 "fight_buffer_size": fight_result.get("buffer_size"),
                 "fight_votes": fight_result.get("fight_votes"),
                 "fight_window_size": fight_result.get("window_size"),
+                "fight_seconds_since_last_remote_call": fight_result.get("seconds_since_last_remote_call"),
+                "remote_fight_encode_seconds": fight_timing.get("remote_encode_seconds"),
+                "remote_fight_request_seconds": fight_timing.get("remote_request_seconds"),
+                "remote_fight_total_seconds": fight_timing.get("remote_total_seconds"),
+                "fight_person_missing_count": fight_result.get("person_missing_count"),
+                "fight_person_missing_grace_frames": fight_result.get("person_missing_grace_frames"),
             },
         }
 

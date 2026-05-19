@@ -202,3 +202,42 @@ def test_bag_removed_after_exit_grace():
     # Bag reappears — state should have been cleared so dwell restarts
     result = detector.build_detections([bag], "cam_01", "lobby", _ts(12))
     assert result == []
+
+
+# ---------------------------------------------------------------------------
+# Unattended timer starts only after person leaves, not from first_seen
+# ---------------------------------------------------------------------------
+
+def test_no_emit_immediately_when_person_just_left():
+    """
+    Bag present with a nearby person for longer than dwell_seconds.
+    When the person leaves, the detector must not emit immediately.
+    It must only emit after dwell_seconds have elapsed since the person left.
+    """
+    detector = UnattendedBagDetector(
+        dwell_seconds=5,
+        owner_distance_threshold_px=180,
+        cooldown_seconds=30,
+    )
+    bag = _bag_det(center=(150, 150))
+    person = _person_det(center=(155, 155))  # distance ~7px, well within 180px
+
+    # Phase 1: bag + person together for 8 seconds (> dwell_seconds)
+    for i in range(9):  # t=:00 to t=:08
+        result = detector.build_detections([bag, person], "cam_01", "lobby", _ts(i))
+        assert result == [], f"Should not emit at t={i} while person is present"
+
+    # Phase 2: person leaves at t=:09 — must NOT emit immediately
+    result = detector.build_detections([bag], "cam_01", "lobby", _ts(9))
+    assert result == [], "Should not emit immediately after person leaves"
+
+    # t=:10 to t=:13 — only 1–4 seconds since person left, below dwell_seconds
+    for i in range(10, 14):
+        result = detector.build_detections([bag], "cam_01", "lobby", _ts(i))
+        assert result == [], f"Should not emit at t={i}, only {i - 9}s since person left"
+
+    # t=:14 — exactly dwell_seconds (5s) since person left at t=:09
+    result = detector.build_detections([bag], "cam_01", "lobby", _ts(14))
+    assert len(result) == 1, "Should emit after dwell_seconds since person left"
+    assert result[0]["label"] == "unattended_bag"
+    assert result[0]["unattended_duration_seconds"] >= 5
