@@ -34,6 +34,7 @@ class EventType:
     FIGHT_DETECTED = "fight_detected"
     AFTER_HOURS_PRESENCE = "after_hours_presence"
     MULTIPLE_PERSONS_DETECTED = "multiple_persons_detected"
+    UNATTENDED_BAG_DETECTED = "unattended_bag_detected"
 
 
 def create_event(

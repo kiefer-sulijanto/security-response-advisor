@@ -25,6 +25,7 @@ MINIMUM_SEVERITY = {
     "emergency_distress": "Red",
     "fire_alert": "Red",
     "physical_altercation": "Red",
+    "unattended_bag": "Yellow",
 }
 
 # Per-type concern sentence used as the third sentence in rule-based descriptions.
@@ -52,6 +53,9 @@ CONCERN_SENTENCES = {
     ),
     "physical_altercation": (
         "Physical violence or an active altercation poses an immediate safety risk to all personnel at the reported location."
+    ),
+    "unattended_bag": (
+        "An unattended bag or luggage item in a monitored area may pose a security or safety risk and requires prompt verification."
     ),
 }
 
@@ -183,6 +187,22 @@ INCIDENT_RULES = {
             "Step 1: Dispatch trained security personnel to the reported location to safely separate and contain the parties involved.",
             "Step 2: Activate the scene emergency protocol, ensure bystander safety, and monitor CCTV for ongoing or escalating violence.",
             "Step 3: Escalate to police and medical services if injury, a weapon, or continuing violence is present, and preserve all CCTV evidence.",
+        ],
+    },
+    "unattended_bag": {
+        "flag": "Yellow",
+        "title": "Unattended Bag Detected",
+        "dispatch_unit": "Ground Response Team",
+        "expected_response_time": "Priority response (< 10 mins)",
+        "explanation": (
+            "An unattended bag or luggage item is classified at minimum Yellow per NPSA Counter-Terrorism Security guidance for suspicious items. "
+            "The item has remained stationary without an identified owner and requires ground verification before escalation. "
+            "This advisory has been generated using rule-based severity classification and should be reviewed by the duty supervisor."
+        ),
+        "actions": [
+            "Step 1: Verify the item via CCTV — confirm it is unattended and note the bag type, location, and duration before dispatching ground response.",
+            "Step 2: Dispatch the Ground Response Team to assess the item; keep a safe distance and do not touch or move the bag until it is cleared.",
+            "Step 3: If the bag cannot be attributed to an identified person within the area, isolate the surrounding zone and escalate to the duty supervisor and, if necessary, specialist services.",
         ],
     },
 }

@@ -7,6 +7,7 @@ LABEL_TO_EVENTS = {
     "fighting_or_aggressive": [EventType.FIGHT_DETECTED],
     "multiple_persons": [EventType.MULTIPLE_PERSONS_DETECTED],
     "loitering": [EventType.LOITERING_DETECTED],
+    "unattended_bag": [EventType.UNATTENDED_BAG_DETECTED],
 }
 
 LOCATION_ALLOWED_HOURS = {
@@ -45,6 +46,11 @@ def process_cctv_detection(detection: dict) -> list:
         "center": center,
         "person_count": person_count,
     }
+
+    if label == "unattended_bag":
+        metadata["bag_type"] = detection.get("bag_type")
+        metadata["unattended_duration_seconds"] = detection.get("unattended_duration_seconds")
+        metadata["nearest_person_distance"] = detection.get("nearest_person_distance")
 
     events = []
 
