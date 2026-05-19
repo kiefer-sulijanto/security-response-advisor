@@ -33,7 +33,7 @@ class FightDetectionService:
         self.last_remote_decision_at: float | None = None
         self.last_remote_result: dict | None = None
 
-        self.clip_frame_count = int(os.getenv("FIGHT_CLIP_FRAME_COUNT", "16"))
+        self.clip_frame_count = int(os.getenv("FIGHT_CLIP_FRAME_COUNT", "8"))
         self.frame_buffer = deque(maxlen=self.clip_frame_count)
 
         self.local_classifier: FightClassifier | None = None
