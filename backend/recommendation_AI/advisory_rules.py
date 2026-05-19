@@ -55,7 +55,7 @@ CONCERN_SENTENCES = {
         "Physical violence or an active altercation poses an immediate safety risk to all personnel at the reported location."
     ),
     "unattended_bag": (
-        "An unattended bag or luggage item in a monitored area may pose a security or safety risk and requires prompt verification."
+        "An unattended bag or luggage item in a monitored area may pose a security or safety risk and should be verified as soon as possible."
     ),
 }
 
