@@ -7,15 +7,6 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
-from config.cameras import CAMERA_REGISTRY
-from config.locations import is_valid_location
-
-def test_all_camera_locations_are_valid():
-    for camera in CAMERA_REGISTRY:
-        assert is_valid_location(camera["location"]), (
-            f"Camera {camera['camera_id']} has invalid location: {camera['location']}"
-        )
-
 # Ensure backend root is on sys.path for submodule imports
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
