@@ -15,7 +15,7 @@ function dispatchToAlert(d) {
   return {
     id:          d.id,
     priority:    d.priority || 'high',
-    type:        d.incidentType || (d.incidentId ? `Incident ${d.incidentId}` : 'Instruction from Command Centre'),
+    type:        d.incidentType || (d.incidentId ? `Incident ${d.incidentId}` : 'Instruction from Command Center'),
     location:    d.incidentLocation || 'See instruction',
     instruction: d.instruction,
     timestamp:   d.timestamp || '—',

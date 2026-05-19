@@ -9,7 +9,7 @@ from core.event_stream_processor import EventStreamProcessor
 from core.incident_engine import IncidentEngine
 from extractors.cctv_extractor import CCTVExtractor
 from services.advisory import build_advisory, normalize_advisory, pipeline_error
-from services.detections import LoiteringDetector, MultiplePersonsDetector, ZonePresenceDetector
+from services.detections import LoiteringDetector, MultiplePersonsDetector, UnattendedBagDetector, ZonePresenceDetector
 from services.detections.utils import parse_timestamp
 
 
@@ -33,6 +33,7 @@ class PipelineService:
         self.loitering = LoiteringDetector()
         self.zone_presence = ZonePresenceDetector()
         self.multiple_persons = MultiplePersonsDetector()
+        self.unattended_bag = UnattendedBagDetector()
 
     # ------------------------------------------------------------------
     # Camera registry
@@ -111,12 +112,15 @@ class PipelineService:
         location = override_location or getattr(extractor, "location", "unknown")
         raw_detections = list(inference.get("detections", []))
 
+        unattended_bag_detections = self.unattended_bag.build_detections(raw_detections, camera_id, location, timestamp_override)
+
         multi_detections = self.multiple_persons.build_detections(raw_detections, camera_id, location, timestamp_override)
         detections = self.zone_presence.suppress_repeated_entries(raw_detections, camera_id, location, timestamp_override)
         detections.extend(multi_detections)
 
         loitering_detections = self.loitering.build_detections(detections, camera_id, location, timestamp_override)
         detections.extend(loitering_detections)
+        detections.extend(unattended_bag_detections)
 
         all_results: list[dict] = []
         for detection in detections:
@@ -135,6 +139,7 @@ class PipelineService:
                 "direct_detection_count": len(raw_detections),
                 "multiple_person_detection_count": len(multi_detections),
                 "loitering_detection_count": len(loitering_detections),
+                "unattended_bag_detection_count": len(unattended_bag_detections),
             }
 
         return {"results": all_results, "debug": debug}
@@ -248,6 +253,7 @@ class PipelineService:
         self.loitering.clear()
         self.zone_presence.clear()
         self.multiple_persons.clear()
+        self.unattended_bag.clear()
         for extractor in self.extractors.values():
             if hasattr(extractor, "fight_detection_service"):
                 extractor.fight_detection_service.reset()

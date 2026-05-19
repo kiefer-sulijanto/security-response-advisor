@@ -85,8 +85,9 @@ class CCTVExtractor:
         timestamp_value = timestamp_override or datetime.now().isoformat(timespec="seconds")
 
         try:
+            
             yolo_start = perf_counter()
-            results = self.model(frame, classes=[0], conf=threshold, verbose=False)
+            results = self.model(frame, classes=[0, 24, 26, 28], conf=threshold, verbose=False)
             yolo_seconds = perf_counter() - yolo_start
         
         except (RuntimeError, TypeError, ValueError) as e:
@@ -101,19 +102,21 @@ class CCTVExtractor:
                 },
             }
 
+        _BAG_CLASS_IDS = {24, 26, 28}
+
         detections: list[dict] = []
         debug_results: list[dict] = []
-
 
         for result in results:
             names = result.names
             boxes = result.boxes
 
             if boxes is None or len(boxes) == 0:
-                debug_results.append({"person_count": 0})
+                debug_results.append({"person_count": 0, "bag_count": 0})
                 continue
 
             person_count = 0
+            bag_count = 0
 
             for box in boxes:
                 try:
@@ -121,34 +124,44 @@ class CCTVExtractor:
                     label = str(names[class_id]).lower()
                     confidence = float(box.conf[0].item())
 
-                    if label != "person":
-                        continue
-
                     x1, y1, x2, y2 = box.xyxy[0].tolist()
                     cx = (x1 + x2) / 2.0
                     cy = (y1 + y2) / 2.0
-                    in_restricted_area = self._is_in_restricted_area((cx, cy))
 
-                    detection = {
-                        "label": "person",
-                        "timestamp": timestamp_value,
-                        "location": self.location,
-                        "camera_id": self.camera_id,
-                        "confidence": confidence,
-                        "bbox": [float(x1), float(y1), float(x2), float(y2)],
-                        "center": [float(cx), float(cy)],
-                        "in_restricted_area": in_restricted_area,
-                    }
-                    detections.append(detection)
-                    person_count += 1
-
+                    if class_id == 0:
+                        in_restricted_area = self._is_in_restricted_area((cx, cy))
+                        detections.append({
+                            "label": "person",
+                            "timestamp": timestamp_value,
+                            "location": self.location,
+                            "camera_id": self.camera_id,
+                            "confidence": confidence,
+                            "bbox": [float(x1), float(y1), float(x2), float(y2)],
+                            "center": [float(cx), float(cy)],
+                            "in_restricted_area": in_restricted_area,
+                        })
+                        person_count += 1
+                    elif class_id in _BAG_CLASS_IDS:
+                        detections.append({
+                            "label": "bag",
+                            "bag_type": label,
+                            "timestamp": timestamp_value,
+                            "location": self.location,
+                            "camera_id": self.camera_id,
+                            "confidence": confidence,
+                            "bbox": [float(x1), float(y1), float(x2), float(y2)],
+                            "center": [float(cx), float(cy)],
+                            "in_restricted_area": False,
+                        })
+                        bag_count += 1
 
                 except (AttributeError, TypeError, ValueError, IndexError, KeyError):
                     continue
 
-            debug_results.append({"person_count": person_count})
+            debug_results.append({"person_count": person_count, "bag_count": bag_count})
 
         total_people = sum(item.get("person_count", 0) for item in debug_results)
+        total_bags = sum(item.get("bag_count", 0) for item in debug_results)
 
         fight_start = perf_counter()
         fight_result = self.fight_detection_service.process_frame(
@@ -193,6 +206,7 @@ class CCTVExtractor:
                 "results": debug_results,
                 "total_detections": len(detections),
                 "person_count": total_people,
+                "bag_count": total_bags,
                 "yolo_seconds": yolo_seconds,
                 "fight_detection_seconds": fight_detection_seconds,
                 "fight_mode": fight_result.get("mode"),

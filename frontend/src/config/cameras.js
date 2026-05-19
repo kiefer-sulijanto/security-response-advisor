@@ -19,18 +19,12 @@
 // ║  Set streamUrl to your proxy's HTTP output URL.                         ║
 // ╚══════════════════════════════════════════════════════════════════════════╝
 export const CAMERA_CONFIG = [
-<<<<<<< HEAD
-  { id: "cam_01", name: "Cam 1", location: "room_A",    source: "stream", streamUrl: "http://172.20.10.4:4747/video", processingIntervalMs: 500 },
-  { id: "cam_02", name: "Cam 2", location: "room_B",   source: "stream", streamUrl: "http://172.20.10.3:4747/video", processingIntervalMs: 500 },
-  { id: "cam_03", name: "Cam 3", location: "room_C",     source: "stream", streamUrl: "http://172.20.10.6:4747/video", processingIntervalMs: 500 },
-=======
-  { id: "cam_01", name: "Cam 1", location: "room_A",    source: "stream", streamUrl: "http://172.20.10.2:4747/video", processingIntervalMs: 1000 },
-  { id: "cam_02", name: "Cam 2", location: "room_B",    source: "stream", streamUrl: "http://172.20.10.3:4747/video", processingIntervalMs: 1000 },
-  { id: "cam_03", name: "Cam 3", location: "room_C",    source: "stream", streamUrl: "http://172.20.10.4:4747/video", processingIntervalMs: 1000 },
->>>>>>> fc375a20e434d41fbfb46435d69b263dad3c5664
+  { id: "cam_01", name: "Cam 1", location: "server_room",       source: "stream", streamUrl: "http://172.20.10.2:4747/video", processingIntervalMs: 500 },
+  { id: "cam_02", name: "Cam 2", location: "lobby",             source: "stream", streamUrl: "http://172.20.10.3:4747/video", processingIntervalMs: 500 },
+  { id: "cam_03", name: "Cam 3", location: "gathering_area",    source: "stream", streamUrl: "http://172.20.10.4:4747/video", processingIntervalMs: 500 },
 
-  { id: "cam_04", name: "Cam 4", location: "carpark_b1",  source: "placeholder", videoUrl: "/videos/normal_001.mp4" },
-  { id: "cam_05", name: "Cam 5", location: "east_wing",   source: "placeholder", videoUrl: "/videos/normal_002.mp4" },
-  { id: "cam_06", name: "Cam 6", location: "loading_bay", source: "placeholder", videoUrl: "/videos/normal_004.mp4" },
+  { id: "cam_04", name: "Cam 4", location: "parking_area",      source: "placeholder", videoUrl: "/videos/normal_001.mp4" },
+  { id: "cam_05", name: "Cam 5", location: "multi_purpose_room",source: "placeholder", videoUrl: "/videos/normal_002.mp4" },
+  { id: "cam_06", name: "Cam 6", location: "store_room",        source: "placeholder", videoUrl: "/videos/normal_004.mp4" },
 ];
 
