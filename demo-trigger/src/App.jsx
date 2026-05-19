@@ -67,6 +67,12 @@ const incidentButtons = [
     description: "Creates smoke_detected",
     color: "#e05a2a",
   },
+  {
+    key: "unattended_bag",
+    label: "Unattended Bag",
+    description: "Creates unattended_bag via CCTV pipeline",
+    color: "#2e86ab",
+  },
 ];
 
 function formatLocationLabel(locationKey) {
@@ -181,6 +187,10 @@ export default function App() {
 
       if (incidentType === "fire_alert") {
         responses = [await sendManualEvent("smoke_detected")];
+      }
+
+      if (incidentType === "unattended_bag") {
+        responses = [await sendCctv("unattended_bag")];
       }
 
       const incidentsCreated = responses.reduce(
