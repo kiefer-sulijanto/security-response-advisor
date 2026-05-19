@@ -46,5 +46,11 @@
     "time_window": 10,
     "base_risk": 9,
     "description": "Possible physical fight or aggressive confrontation detected"
+  },
+  "unattended_bag": {
+    "events": ["unattended_bag_detected"],
+    "time_window": 10,
+    "base_risk": 7,
+    "description": "Bag or luggage left unattended in monitored area"
   }
 }

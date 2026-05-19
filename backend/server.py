@@ -20,6 +20,7 @@ from routes import (
     pipeline_router,
     demo_router,
     command_center_map_router,
+    recommendations_router,
 )
 
 app = FastAPI(title="Certis Security Management API")
@@ -52,7 +53,7 @@ app.include_router(reports_router)
 app.include_router(pipeline_router)
 app.include_router(demo_router)
 app.include_router(command_center_map_router)
-
+app.include_router(recommendations_router)
 @app.get("/health")
 def health():
     return {"status": "ok", "timestamp": datetime.now().isoformat()}

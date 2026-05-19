@@ -5,3 +5,4 @@ from .reports import router as reports_router
 from .pipeline_routes import router as pipeline_router
 from .demo import router as demo_router
 from .command_center_map import router as command_center_map_router
+from .recommendations import router as recommendations_router
