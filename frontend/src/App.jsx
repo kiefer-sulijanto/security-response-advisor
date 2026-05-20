@@ -4,7 +4,6 @@ import { api } from "./services/api.js";
 import { Sidebar }            from "./components/Sidebar";
 import { DashboardPage }      from "./pages/DashboardPage";
 import { CamerasPage }        from "./pages/CamerasPage";
-import { UploadPage }         from "./pages/UploadPage";
 import { IncidentsPage }      from "./pages/IncidentsPage";
 import { ResultsPage }        from "./pages/ResultsPage";
 import { GroundOfficersPage } from "./pages/GroundOfficersPage";
@@ -117,7 +116,7 @@ export default function App() {
 
   const handleBack = () => {
     setCurrentAnalysis(null);
-    setPage("upload");
+    setPage("dashboard");
   };
 
   const activeIncidentList = incidents.filter(isActiveIncident);
@@ -127,10 +126,6 @@ export default function App() {
   const renderPage = () => {
     if (page === "results" && currentAnalysis) {
       return <ResultsPage analysis={currentAnalysis} onBack={handleBack} />;
-    }
-
-    if (page === "upload") {
-      return <UploadPage onAnalysisComplete={handleAnalysisComplete} />;
     }
 
     if (page === "cameras") {
@@ -206,6 +201,7 @@ export default function App() {
     return (
       <DashboardPage
         onNav={setPage}
+        onAnalysisComplete={handleAnalysisComplete}
         analyses={analyses}
         incidents={incidents}
         groundOfficers={groundOfficers}
@@ -250,7 +246,7 @@ export default function App() {
       )}
 
       <Sidebar
-        active={page === "results" ? "upload" : page}
+        active={page === "results" ? "dashboard" : page}
         onNav={setPage}
         incidentCount={activeIncidents}
       />

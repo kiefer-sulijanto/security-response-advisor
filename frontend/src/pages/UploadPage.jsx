@@ -7,7 +7,7 @@ import { runPipelineMultiFrameAnalysis } from "../services/pipelineAnalysis";
 import { DEFAULT_LOCATION, LOCATION_OPTIONS } from "../config/locations";
 
 
-export function UploadPage({ onAnalysisComplete }) {
+export function UploadPanel({ onAnalysisComplete, embedded = false }) {
   const [file, setFile]           = useState(null);
   const [dragging, setDragging]   = useState(false);
   const [hovering, setHovering]   = useState(false);
@@ -65,11 +65,8 @@ export function UploadPage({ onAnalysisComplete }) {
   const dzBg      = isActive ? "rgba(92,186,71,0.07)" : hovering ? "rgba(255,255,255,0.03)" : "transparent";
   const dzShadow  = isActive ? `0 0 0 4px rgba(92,186,71,0.15)` : hovering ? `0 0 0 3px rgba(255,255,255,0.06)` : "none";
 
-  return (
-    <div style={{ flex: 1, overflow: "auto", background: C.bg, fontFamily: font, overscrollBehavior: "contain" }}>
-      <TopBar title="Analyze Footage" subtitle="Upload a video for AI threat detection" criticalCount={0} />
-      <div style={{ padding: "40px 28px", display: "flex", flexDirection: "column", alignItems: "center" }}>
-        <div style={card({ padding: 32, width: "100%", maxWidth: 640 })}>
+  const cardContent = (
+        <div style={card({ padding: 32, width: "100%", maxWidth: embedded ? "100%" : 640 })}>
 
           <div
             onClick={() => !isRunning && fileInputRef.current?.click()}
@@ -183,9 +180,22 @@ export function UploadPage({ onAnalysisComplete }) {
             </button>
           </div>
         </div>
+  );
+
+  if (embedded) return cardContent;
+
+  return (
+    <div style={{ flex: 1, overflow: "auto", background: C.bg, fontFamily: font, overscrollBehavior: "contain" }}>
+      <TopBar title="Analyze Footage" subtitle="Upload a video for AI threat detection" criticalCount={0} />
+      <div style={{ padding: "40px 28px", display: "flex", flexDirection: "column", alignItems: "center" }}>
+        {cardContent}
       </div>
     </div>
   );
+}
+
+export function UploadPage({ onAnalysisComplete }) {
+  return <UploadPanel onAnalysisComplete={onAnalysisComplete} embedded={false} />;
 }
 
 const ctxLabel = {

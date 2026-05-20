@@ -75,7 +75,6 @@ const ICONS = {
 
 const NAV_MAIN = [
   { id: "dashboard", label: "Dashboard" },
-  { id: "upload",    label: "Analyze" },
   { id: "cameras",   label: "Cameras" },
   { id: "map",       label: "Location Map" },
   { id: "incidents", label: "Incidents" },

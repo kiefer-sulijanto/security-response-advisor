@@ -5,6 +5,7 @@ import { TopBar } from "../components/TopBar";
 import { CameraFeed } from "../components/CameraFeed";
 import { StatCard, EmptyState, Badge, StatusDot } from "../components/ui";
 import { api } from "../services/api";
+import { UploadPanel } from "./UploadPage";
 
 const GO_STATUS_META = {
   responding: { color: "#e24b4a", label: "Responding" },
@@ -46,7 +47,7 @@ function CardHeader({ title, action, onAction }) {
   );
 }
 
-export function DashboardPage({ onNav, analyses, incidents, groundOfficers = [], dispatches = [] }) {
+export function DashboardPage({ onNav, onAnalysisComplete, analyses, incidents, groundOfficers = [], dispatches = [] }) {
   const criticalCount = analyses.filter(a => a.result?.flag === "red").length;
   const warningCount  = analyses.filter(a => a.result?.flag === "yellow").length;
   const activeIncidents = incidents.filter(i => i.status !== "resolved");
@@ -227,6 +228,12 @@ export function DashboardPage({ onNav, analyses, incidents, groundOfficers = [],
           </div>
         </div>
 
+        {/* ── Video Analysis ── */}
+        <div>
+          <SectionLabel>Analyze Footage</SectionLabel>
+          <UploadPanel onAnalysisComplete={onAnalysisComplete} embedded />
+        </div>
+
         {/* ── Activity ── */}
         <div>
           <SectionLabel>Activity</SectionLabel>
@@ -234,13 +241,12 @@ export function DashboardPage({ onNav, analyses, incidents, groundOfficers = [],
 
             {/* Recent Analyses */}
             <div style={card({ padding: 0, overflow: "hidden" })}>
-              <CardHeader title="Recent Analyses" action="+ New →" onAction={() => onNav("upload")} />
+              <CardHeader title="Recent Analyses" />
               {analyses.length === 0 ? (
                 <EmptyState
                   icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>}
                   title="No analyses yet"
-                  subtitle="Upload a video to run your first AI-powered security analysis."
-                  actionLabel="Upload video" onAction={() => onNav("upload")} />
+                  subtitle="Use the Analyze Footage panel above to run your first AI-powered security analysis." />
               ) : (
                 analyses.slice().reverse().slice(0, 6).map((item, i, arr) => {
                   const hasCritical = item.result?.segments?.some(s => s.color === C.red);

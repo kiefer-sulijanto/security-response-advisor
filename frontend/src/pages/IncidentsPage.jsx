@@ -150,8 +150,8 @@ export function IncidentsPage({ incidents, groundOfficers = [], analyses = [], o
               subtitle={filter === "all"
                 ? "Incidents will appear automatically when threats are detected"
                 : `No incidents match the "${FILTER_LABELS[filter]}" filter.`}
-              actionLabel={filter === "all" ? "Analyze a video" : undefined}
-              onAction={filter === "all" ? () => onNav("upload") : undefined}
+              actionLabel={filter === "all" ? "Go to Dashboard" : undefined}
+              onAction={filter === "all" ? () => onNav("dashboard") : undefined}
             />
           ) : (
             filtered.map((inc) => {
