@@ -265,8 +265,12 @@ export function getNearbyOfficersForLocation(
   renderableFloors,
   targetFloorKey,
   targetLocationKey,
-  limit = 5
+  limit = 5,
+  options = {}
 ) {
+  const { excludeOfficerIds = [] } = options;
+  const excluded = new Set(excludeOfficerIds.filter(Boolean));
+
   const allLocations = flattenRenderableLocations(renderableFloors);
 
   const targetLocation = allLocations.find(
@@ -283,6 +287,8 @@ export function getNearbyOfficersForLocation(
     const sameFloor = normalize(location.floorKey) === normalize(targetFloorKey);
 
     for (const officer of asArray(location.officers)) {
+      if (excluded.has(officer.id)) continue;
+
       officers.push({
         ...officer,
         currentFloorKey: location.floorKey,
@@ -300,6 +306,59 @@ export function getNearbyOfficersForLocation(
   return officers
     .sort((a, b) => a.distanceScore - b.distanceScore)
     .slice(0, limit);
+}
+
+export function getOfficerAssignedIncidentId(officer) {
+  return officer?.assignedIncidentId || officer?.assigned_incident_id || null;
+}
+
+export function isOfficerAvailableForDispatch(officer) {
+  if (!officer) return false;
+  const status = normalize(officer.status);
+  const online = officer.online !== false;
+  return online && status === "patrolling" && !getOfficerAssignedIncidentId(officer);
+}
+
+export function isActiveDispatch(dispatch) {
+  const status = normalize(dispatch?.status);
+  return ["unread", "acknowledged", "in_progress"].includes(status);
+}
+
+export function getDispatchIncidentId(dispatch) {
+  return dispatch?.incidentId || dispatch?.incident_id || null;
+}
+
+export function getDispatchOfficerId(dispatch) {
+  return dispatch?.officerId || dispatch?.officer_id || null;
+}
+
+export function getActiveOfficerDispatchMap(dispatches) {
+  const map = new Map();
+  for (const d of asArray(dispatches)) {
+    if (isActiveDispatch(d)) {
+      const officerId = getDispatchOfficerId(d);
+      if (officerId) map.set(officerId, d);
+    }
+  }
+  return map;
+}
+
+// Returns "available" | "responding" | "standby" | "offline"
+export function getOfficerVisualStatus(officer, activeDispatchMap) {
+  if (!officer || officer.summaryOnly) return "available";
+  const status = normalize(officer.status);
+  const online = officer.online !== false;
+
+  if (!online || status === "offline" || status === "off_duty") return "offline";
+
+  if (officer.id && activeDispatchMap && activeDispatchMap.has(officer.id)) {
+    return "responding";
+  }
+
+  if (status === "responding" || status === "in_progress") return "responding";
+  if (status === "patrolling") return "available";
+
+  return "standby";
 }
 
 export function getOfficerShortLabel(officer, index = 0) {

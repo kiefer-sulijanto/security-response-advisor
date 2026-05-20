@@ -11,12 +11,45 @@ import {
   getOfficerShortLabel,
   getPriorityTheme,
   getNearbyOfficersForLocation,
+  isActiveDispatch,
+  getDispatchIncidentId,
+  getDispatchOfficerId,
+  isOfficerAvailableForDispatch,
+  getActiveOfficerDispatchMap,
+  getOfficerVisualStatus,
 } from "../services/locationUtils";
 
 function humanizeKey(value) {
   return String(value || "")
     .replace(/_/g, " ")
     .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+// Returns inline style tokens for an officer marker/card based on visual status
+function officerMarkerStyle(visualStatus) {
+  if (visualStatus === "responding") {
+    return {
+      background: "rgba(251,146,60,0.18)",
+      border: "2px solid rgba(251,146,60,0.8)",
+      color: "#fdba74",
+      boxShadow: "0 0 0 5px rgba(251,146,60,0.10)",
+    };
+  }
+  if (visualStatus === "offline" || visualStatus === "standby") {
+    return {
+      background: "rgba(100,116,139,0.18)",
+      border: "2px solid rgba(100,116,139,0.5)",
+      color: "#94a3b8",
+      boxShadow: "0 0 0 5px rgba(100,116,139,0.06)",
+    };
+  }
+  // available (default) = blue
+  return {
+    background: "rgba(56,189,248,0.16)",
+    border: "2px solid rgba(56,189,248,0.6)",
+    color: "#bae6fd",
+    boxShadow: "0 0 0 5px rgba(56,189,248,0.08)",
+  };
 }
 
 function getIncidentId(incident) {
@@ -134,6 +167,8 @@ function mergeLayoutOnlyLocations(renderableFloors) {
 
 export function LocationMapPage({
   locationMap = { floors: [] },
+  groundOfficers = [],
+  dispatches = [],
   onNav,
   onDispatch,
 }) {
@@ -141,6 +176,11 @@ export function LocationMapPage({
     const built = buildRenderableFloors(locationMap);
     return mergeLayoutOnlyLocations(built);
   }, [locationMap]);
+
+  const activeDispatchMap = useMemo(
+    () => getActiveOfficerDispatchMap(dispatches),
+    [dispatches]
+  );
 
   const [selectedFloorKey, setSelectedFloorKey] = useState("");
 
@@ -211,6 +251,7 @@ export function LocationMapPage({
               <MapPanel
                 floor={selectedFloor}
                 locations={selectedLocations}
+                activeDispatchMap={activeDispatchMap}
                 onNav={onNav}
               />
 
@@ -221,6 +262,9 @@ export function LocationMapPage({
                 incidents={activeIncidents}
                 officerCount={officerCount}
                 officers={officers}
+                dispatches={dispatches}
+                groundOfficers={groundOfficers}
+                activeDispatchMap={activeDispatchMap}
                 onNav={onNav}
                 onDispatch={onDispatch}
               />
@@ -287,7 +331,7 @@ function FloorSelector({ floors, selectedFloorKey, onSelect }) {
   );
 }
 
-function MapPanel({ floor, locations, onNav }) {
+function MapPanel({ floor, locations, activeDispatchMap, onNav }) {
   const incidentCount = getFloorIncidentCount(locations);
   const officerCount = getFloorOfficerCount(locations);
 
@@ -333,6 +377,7 @@ function MapPanel({ floor, locations, onNav }) {
           <LocationArea
             key={location.key || index}
             location={location}
+            activeDispatchMap={activeDispatchMap}
             onNav={onNav}
           />
         ))}
@@ -341,7 +386,7 @@ function MapPanel({ floor, locations, onNav }) {
   );
 }
 
-function LocationArea({ location, onNav }) {
+function LocationArea({ location, activeDispatchMap, onNav }) {
   const layout = location.visualArea;
   const incidents = asArray(location.incidents);
   const officers = asArray(location.officers);
@@ -430,6 +475,7 @@ function LocationArea({ location, onNav }) {
           officers={officers}
           officerCount={officerCount}
           priorityTheme={priorityTheme}
+          activeDispatchMap={activeDispatchMap}
           onNav={onNav}
         />
       )}
@@ -454,6 +500,7 @@ function LocationArea({ location, onNav }) {
 function CenterMarkers({
   officers,
   officerCount,
+  activeDispatchMap,
 }) {
   const visibleOfficerDots =
     officers.length > 0
@@ -488,29 +535,30 @@ function CenterMarkers({
         maxWidth: "84%",
       }}
     >
-      {visibleOfficerDots.map((officer, index) => (
-        <span
-          key={officer.id || officer.badge || index}
-          title={`${officer.name || "Officer"} · ${officer.status || "standby"}`}
-          style={{
-            minWidth: 42,
-            height: 28,
-            borderRadius: 999,
-            padding: "0 9px",
-            background: "rgba(56,189,248,0.16)",
-            border: "2px solid rgba(56,189,248,0.6)",
-            color: "#bae6fd",
-            display: "grid",
-            placeItems: "center",
-            fontSize: 11,
-            fontWeight: 900,
-            boxShadow: "0 0 0 5px rgba(56,189,248,0.08)",
-            whiteSpace: "nowrap",
-          }}
-        >
-          {officer.summaryOnly ? "GO" : getOfficerShortLabel(officer, index)}
-        </span>
-      ))}
+      {visibleOfficerDots.map((officer, index) => {
+        const visualStatus = getOfficerVisualStatus(officer, activeDispatchMap);
+        const mStyle = officerMarkerStyle(visualStatus);
+        return (
+          <span
+            key={officer.id || officer.badge || index}
+            title={`${officer.name || "Officer"} · ${officer.status || "standby"}`}
+            style={{
+              minWidth: 42,
+              height: 28,
+              borderRadius: 999,
+              padding: "0 9px",
+              display: "grid",
+              placeItems: "center",
+              fontSize: 11,
+              fontWeight: 900,
+              whiteSpace: "nowrap",
+              ...mStyle,
+            }}
+          >
+            {officer.summaryOnly ? "GO" : getOfficerShortLabel(officer, index)}
+          </span>
+        );
+      })}
 
       {hiddenOfficerCount > 0 && (
         <span
@@ -622,6 +670,9 @@ function SidePanel({
   incidents,
   officerCount,
   officers,
+  dispatches,
+  groundOfficers,
+  activeDispatchMap,
   onNav,
   onDispatch,
 }) {
@@ -653,11 +704,13 @@ function SidePanel({
         incidentCount={incidentCount}
         incidents={incidents}
         renderableFloors={renderableFloors}
+        dispatches={dispatches}
+        groundOfficers={groundOfficers}
         onNav={onNav}
         onDispatch={onDispatch}
       />
 
-      <OfficerList officerCount={officerCount} officers={officers} />
+      <OfficerList officerCount={officerCount} officers={officers} activeDispatchMap={activeDispatchMap} />
 
       <Legend />
     </div>
@@ -668,6 +721,8 @@ function IncidentList({
   incidentCount,
   incidents,
   renderableFloors,
+  dispatches,
+  groundOfficers,
   onNav,
   onDispatch,
 }) {
@@ -710,6 +765,8 @@ function IncidentList({
               key={incident.mapKey || incident.id || index}
               incident={incident}
               renderableFloors={renderableFloors}
+              dispatches={dispatches}
+              groundOfficers={groundOfficers}
               onNav={onNav}
               onDispatch={onDispatch}
             />
@@ -723,6 +780,8 @@ function IncidentList({
 function IncidentDispatchCard({
   incident,
   renderableFloors,
+  dispatches,
+  groundOfficers,
   onNav,
   onDispatch,
 }) {
@@ -732,15 +791,51 @@ function IncidentDispatchCard({
   const [instruction, setInstruction] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [assignedNotice, setAssignedNotice] = useState("");
+  const [dispatchError, setDispatchError] = useState("");
+
+  // Active dispatches for this specific incident
+  const incidentDispatches = useMemo(() => {
+    if (!incident.id) return [];
+    return asArray(dispatches).filter(
+      (d) => isActiveDispatch(d) && getDispatchIncidentId(d) === incident.id
+    );
+  }, [dispatches, incident.id]);
+
+  // Officers assigned to this incident (matched to groundOfficers for fresh status)
+  const assignedOfficers = useMemo(() => {
+    return incidentDispatches.map((d) => {
+      const officerId = getDispatchOfficerId(d);
+      const officer = asArray(groundOfficers).find((o) => o.id === officerId) || null;
+      return { dispatch: d, officer };
+    });
+  }, [incidentDispatches, groundOfficers]);
+
+  // All IDs to exclude from the nearest-officers list:
+  //   - officers with any active dispatch (already deployed somewhere)
+  //   - officers not in "patrolling" status (unavailable by status)
+  const excludeFromNearest = useMemo(() => {
+    const busyByDispatch = asArray(dispatches)
+      .filter(isActiveDispatch)
+      .map(getDispatchOfficerId)
+      .filter(Boolean);
+
+    const busyByStatus = asArray(groundOfficers)
+      .filter((o) => !isOfficerAvailableForDispatch(o))
+      .map((o) => o.id)
+      .filter(Boolean);
+
+    return [...new Set([...busyByDispatch, ...busyByStatus])];
+  }, [dispatches, groundOfficers]);
 
   const nearestOfficers = useMemo(() => {
     return getNearbyOfficersForLocation(
       renderableFloors,
       incident.mapFloorKey,
       incident.mapLocationKey,
-      3
+      3,
+      { excludeOfficerIds: excludeFromNearest }
     );
-  }, [renderableFloors, incident.mapFloorKey, incident.mapLocationKey]);
+  }, [renderableFloors, incident.mapFloorKey, incident.mapLocationKey, excludeFromNearest]);
 
   const theme = getPriorityTheme(incident.mapPriority || "red");
   const selectedOfficer = nearestOfficers.find(
@@ -764,6 +859,7 @@ function IncidentDispatchCard({
     if (!canSend) return;
 
     setIsSending(true);
+    setDispatchError("");
 
     try {
       await onDispatch({
@@ -778,6 +874,15 @@ function IncidentDispatchCard({
       resetForm();
       setIsAssigning(false);
       setTimeout(() => setAssignedNotice(""), 3500);
+    } catch (err) {
+      const message = String(err?.message || "");
+      if (message.includes("409") || /unavailable|already|conflict/i.test(message)) {
+        setDispatchError(
+          "Officer is no longer available. Please choose another officer."
+        );
+      } else {
+        setDispatchError(message || "Dispatch failed. Please try again.");
+      }
     } finally {
       setIsSending(false);
     }
@@ -793,6 +898,40 @@ function IncidentDispatchCard({
         color: C.textPrimary,
       }}
     >
+      {/* Assigned officers section */}
+      {assignedOfficers.length > 0 && (
+        <div
+          style={{
+            marginBottom: 12,
+            paddingBottom: 12,
+            borderBottom: "1px solid rgba(255,255,255,0.10)",
+          }}
+        >
+          <div
+            style={{
+              fontSize: 11,
+              fontWeight: 900,
+              color: "#86efac",
+              letterSpacing: 0.8,
+              textTransform: "uppercase",
+              marginBottom: 7,
+            }}
+          >
+            Assigned Officer{assignedOfficers.length !== 1 ? "s" : ""}
+          </div>
+          <div style={{ display: "grid", gap: 6 }}>
+            {assignedOfficers.map(({ dispatch, officer }, index) => (
+              <AssignedOfficerBadge
+                key={dispatch?.id || index}
+                dispatch={dispatch}
+                officer={officer}
+                index={index}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
       <div
         style={{
           display: "grid",
@@ -833,9 +972,19 @@ function IncidentDispatchCard({
           onClick={() => {
             setIsAssigning((value) => !value);
             setAssignedNotice("");
+            setDispatchError("");
           }}
-          disabled={incident.summaryOnly}
-          title={incident.summaryOnly ? "Incident ID is required before dispatching" : "Assign officer"}
+          disabled={
+            incident.summaryOnly ||
+            (!isAssigning && nearestOfficers.length === 0)
+          }
+          title={
+            incident.summaryOnly
+              ? "Incident ID is required before dispatching"
+              : !isAssigning && nearestOfficers.length === 0
+                ? "No available officers"
+                : "Assign officer"
+          }
           style={{
             border: `1px solid ${theme.border}`,
             background: isAssigning ? theme.background : "rgba(255,255,255,0.06)",
@@ -844,14 +993,47 @@ function IncidentDispatchCard({
             padding: "8px 10px",
             fontSize: 12,
             fontWeight: 900,
-            cursor: incident.summaryOnly ? "not-allowed" : "pointer",
+            cursor:
+              incident.summaryOnly || (!isAssigning && nearestOfficers.length === 0)
+                ? "not-allowed"
+                : "pointer",
             whiteSpace: "nowrap",
-            opacity: incident.summaryOnly ? 0.55 : 1,
+            opacity:
+              incident.summaryOnly || (!isAssigning && nearestOfficers.length === 0)
+                ? 0.55
+                : 1,
           }}
         >
-          {isAssigning ? "Cancel" : assignedNotice ? "Assign another" : "Assign"}
+          {isAssigning
+            ? "Cancel"
+            : assignedOfficers.length > 0
+              ? "Assign another"
+              : "Assign"}
         </button>
       </div>
+
+      {/* No-officers inline message when form is closed */}
+      {!incident.summaryOnly && !isAssigning && nearestOfficers.length === 0 && (
+        <div
+          style={{
+            marginTop: 10,
+            padding: "10px 12px",
+            borderRadius: 10,
+            background: "rgba(100,116,139,0.10)",
+            border: "1px solid rgba(100,116,139,0.28)",
+            color: "#94a3b8",
+            fontSize: 12,
+            lineHeight: 1.5,
+          }}
+        >
+          <strong
+            style={{ color: C.textSecondary, display: "block", marginBottom: 2 }}
+          >
+            No available officers
+          </strong>
+          All officers are currently assigned, offline, or not patrolling.
+        </div>
+      )}
 
       {assignedNotice && !isAssigning && (
         <div
@@ -893,159 +1075,252 @@ function IncidentDispatchCard({
           }}
         >
           <div style={{ fontSize: 13, fontWeight: 900, marginBottom: 8 }}>
-            Top 3 Nearest Officers
+            Top 3 Nearest Available Officers
           </div>
 
           {nearestOfficers.length === 0 ? (
-            <div style={{ color: C.textSecondary, fontSize: 12 }}>
-              No nearby officers found.
+            <div
+              style={{
+                padding: "12px 14px",
+                borderRadius: 10,
+                background: "rgba(100,116,139,0.10)",
+                border: "1px solid rgba(100,116,139,0.28)",
+                color: "#94a3b8",
+                fontSize: 12,
+                lineHeight: 1.5,
+              }}
+            >
+              <strong
+                style={{ color: C.textSecondary, display: "block", marginBottom: 2 }}
+              >
+                No available officers
+              </strong>
+              All officers are currently assigned, offline, or not patrolling.
             </div>
           ) : (
-            <div style={{ display: "grid", gap: 8 }}>
-              {nearestOfficers.map((officer, index) => {
-                const isSelected = selectedOfficerId === officer.id;
+            <>
+              <div style={{ display: "grid", gap: 8 }}>
+                {nearestOfficers.map((officer, index) => {
+                  const isSelected = selectedOfficerId === officer.id;
 
-                return (
-                  <button
-                    key={officer.id || index}
-                    onClick={() => setSelectedOfficerId(officer.id)}
-                    style={{
-                      textAlign: "left",
-                      border: `1px solid ${
-                        isSelected ? "#38bdf8" : "rgba(56,189,248,0.35)"
-                      }`,
-                      background: isSelected
-                        ? "rgba(56,189,248,0.18)"
-                        : "rgba(56,189,248,0.08)",
-                      color: C.textPrimary,
-                      borderRadius: 12,
-                      padding: 10,
-                      cursor: "pointer",
-                    }}
-                  >
-                    <strong>
-                      {getOfficerShortLabel(officer, index)} ·{" "}
-                      {officer.name || "Ground Officer"}
-                    </strong>
+                  return (
+                    <button
+                      key={officer.id || index}
+                      onClick={() => {
+                        setSelectedOfficerId(officer.id);
+                        setDispatchError("");
+                      }}
+                      style={{
+                        textAlign: "left",
+                        border: `1px solid ${
+                          isSelected ? "#38bdf8" : "rgba(56,189,248,0.35)"
+                        }`,
+                        background: isSelected
+                          ? "rgba(56,189,248,0.18)"
+                          : "rgba(56,189,248,0.08)",
+                        color: C.textPrimary,
+                        borderRadius: 12,
+                        padding: 10,
+                        cursor: "pointer",
+                      }}
+                    >
+                      <strong>
+                        {getOfficerShortLabel(officer, index)} ·{" "}
+                        {officer.name || "Ground Officer"}
+                      </strong>
 
-                    {officer.badge && (
-                      <span style={{ color: C.textSecondary }}>
-                        {" "}
-                        · {officer.badge}
+                      {officer.badge && (
+                        <span style={{ color: C.textSecondary }}>
+                          {" "}
+                          · {officer.badge}
+                        </span>
+                      )}
+
+                      <br />
+
+                      <span style={{ color: C.textSecondary, fontSize: 12 }}>
+                        {officer.currentLocationLabel}
+                        {officer.sameFloor ? " · same floor" : " · different floor"}
                       </span>
-                    )}
+                    </button>
+                  );
+                })}
+              </div>
 
-                    <br />
+              <div style={{ marginTop: 12 }}>
+                <label
+                  style={{
+                    display: "block",
+                    color: C.textSecondary,
+                    fontSize: 11,
+                    fontWeight: 900,
+                    letterSpacing: 0.8,
+                    textTransform: "uppercase",
+                    marginBottom: 6,
+                  }}
+                >
+                  Priority
+                </label>
 
-                    <span style={{ color: C.textSecondary, fontSize: 12 }}>
-                      {officer.currentLocationLabel}
-                      {officer.sameFloor ? " · same floor" : " · different floor"}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
+                <select
+                  value={priority}
+                  onChange={(event) => setPriority(event.target.value)}
+                  disabled={!selectedOfficerId}
+                  style={{
+                    width: "100%",
+                    border: `1px solid ${C.border}`,
+                    background: "#111318",
+                    color: C.textPrimary,
+                    borderRadius: 10,
+                    padding: "10px 12px",
+                    opacity: selectedOfficerId ? 1 : 0.55,
+                  }}
+                >
+                  <option value="">Select priority</option>
+                  <option value="critical">Critical</option>
+                  <option value="high">High</option>
+                  <option value="medium">Medium</option>
+                </select>
+              </div>
+
+              <div style={{ marginTop: 12 }}>
+                <label
+                  style={{
+                    display: "block",
+                    color: C.textSecondary,
+                    fontSize: 11,
+                    fontWeight: 900,
+                    letterSpacing: 0.8,
+                    textTransform: "uppercase",
+                    marginBottom: 6,
+                  }}
+                >
+                  Instruction
+                </label>
+
+                <textarea
+                  value={instruction}
+                  onChange={(event) => setInstruction(event.target.value)}
+                  disabled={!priority}
+                  placeholder="e.g. Proceed to Server Room and assess the situation..."
+                  rows={3}
+                  style={{
+                    width: "100%",
+                    resize: "vertical",
+                    border: `1px solid ${C.border}`,
+                    background: "#111318",
+                    color: C.textPrimary,
+                    borderRadius: 10,
+                    padding: "10px 12px",
+                    opacity: priority ? 1 : 0.55,
+                    fontFamily: font,
+                  }}
+                />
+              </div>
+
+              {dispatchError && (
+                <div
+                  style={{
+                    marginTop: 10,
+                    padding: "10px 12px",
+                    borderRadius: 10,
+                    background: "rgba(239,68,68,0.12)",
+                    border: "1px solid rgba(239,68,68,0.35)",
+                    color: "#fca5a5",
+                    fontSize: 13,
+                  }}
+                >
+                  {dispatchError}
+                </div>
+              )}
+
+              <button
+                onClick={handleSend}
+                disabled={!canSend || isSending}
+                style={{
+                  marginTop: 12,
+                  width: "100%",
+                  border: "none",
+                  borderRadius: 12,
+                  padding: "11px 12px",
+                  background: canSend ? "#f97316" : "rgba(148,163,184,0.18)",
+                  color: canSend ? "#fff7ed" : C.textMuted,
+                  fontWeight: 900,
+                  cursor: canSend ? "pointer" : "not-allowed",
+                }}
+              >
+                {isSending
+                  ? "Sending..."
+                  : selectedOfficer
+                    ? `Assign ${selectedOfficer.name || "officer"}`
+                    : "Send Instruction"}
+              </button>
+            </>
           )}
-
-          <div style={{ marginTop: 12 }}>
-            <label
-              style={{
-                display: "block",
-                color: C.textSecondary,
-                fontSize: 11,
-                fontWeight: 900,
-                letterSpacing: 0.8,
-                textTransform: "uppercase",
-                marginBottom: 6,
-              }}
-            >
-              Priority
-            </label>
-
-            <select
-              value={priority}
-              onChange={(event) => setPriority(event.target.value)}
-              disabled={!selectedOfficerId}
-              style={{
-                width: "100%",
-                border: `1px solid ${C.border}`,
-                background: "#111318",
-                color: C.textPrimary,
-                borderRadius: 10,
-                padding: "10px 12px",
-                opacity: selectedOfficerId ? 1 : 0.55,
-              }}
-            >
-              <option value="">Select priority</option>
-              <option value="critical">Critical</option>
-              <option value="high">High</option>
-              <option value="medium">Medium</option>
-            </select>
-          </div>
-
-          <div style={{ marginTop: 12 }}>
-            <label
-              style={{
-                display: "block",
-                color: C.textSecondary,
-                fontSize: 11,
-                fontWeight: 900,
-                letterSpacing: 0.8,
-                textTransform: "uppercase",
-                marginBottom: 6,
-              }}
-            >
-              Instruction
-            </label>
-
-            <textarea
-              value={instruction}
-              onChange={(event) => setInstruction(event.target.value)}
-              disabled={!priority}
-              placeholder="e.g. Proceed to Server Room and assess the situation..."
-              rows={3}
-              style={{
-                width: "100%",
-                resize: "vertical",
-                border: `1px solid ${C.border}`,
-                background: "#111318",
-                color: C.textPrimary,
-                borderRadius: 10,
-                padding: "10px 12px",
-                opacity: priority ? 1 : 0.55,
-                fontFamily: font,
-              }}
-            />
-          </div>
-
-          <button
-            onClick={handleSend}
-            disabled={!canSend || isSending}
-            style={{
-              marginTop: 12,
-              width: "100%",
-              border: "none",
-              borderRadius: 12,
-              padding: "11px 12px",
-              background: canSend ? "#f97316" : "rgba(148,163,184,0.18)",
-              color: canSend ? "#fff7ed" : C.textMuted,
-              fontWeight: 900,
-              cursor: canSend ? "pointer" : "not-allowed",
-            }}
-          >
-            {isSending
-              ? "Sending..."
-              : selectedOfficer
-                ? `Assign ${selectedOfficer.name || "officer"}`
-                : "Send Instruction"}
-          </button>
         </div>
       )}
     </div>
   );
 }
 
-function OfficerList({ officerCount, officers }) {
+function AssignedOfficerBadge({ dispatch, officer, index }) {
+  const goLabel = officer ? getOfficerShortLabel(officer, index) : "GO_?";
+  const name = officer?.name || "Ground Officer";
+  const badge = officer?.badge;
+  const status = officer?.status || "responding";
+  const priority = dispatch?.priority;
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        padding: "8px 10px",
+        borderRadius: 10,
+        background: "rgba(34,197,94,0.10)",
+        border: "1px solid rgba(34,197,94,0.28)",
+      }}
+    >
+      <span
+        style={{
+          fontSize: 11,
+          fontWeight: 900,
+          color: "#86efac",
+          background: "rgba(34,197,94,0.18)",
+          border: "1px solid rgba(34,197,94,0.4)",
+          borderRadius: 6,
+          padding: "2px 6px",
+          whiteSpace: "nowrap",
+        }}
+      >
+        {goLabel}
+      </span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 13, fontWeight: 800, color: "#bbf7d0" }}>
+          {name}
+          {badge && (
+            <span style={{ color: C.textSecondary, fontWeight: 400 }}>
+              {" "}
+              · {badge}
+            </span>
+          )}
+        </div>
+        <div style={{ fontSize: 11, color: C.textSecondary }}>
+          {humanizeKey(status)}
+          {priority && (
+            <span style={{ color: "#fde68a" }}>
+              {" "}
+              · {humanizeKey(priority)}
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function OfficerList({ officerCount, officers, activeDispatchMap }) {
   return (
     <div
       style={{
@@ -1087,13 +1362,36 @@ function OfficerList({ officerCount, officers }) {
         <div style={{ display: "grid", gap: 8 }}>
           {officers.map((officer, index) => {
             const goId = getOfficerShortLabel(officer, index);
+            const visualStatus = getOfficerVisualStatus(officer, activeDispatchMap);
+            const isResponding = visualStatus === "responding";
+            const isOffline = visualStatus === "offline" || visualStatus === "standby";
+            const cardBorder = isResponding
+              ? "1px solid rgba(251,146,60,0.45)"
+              : isOffline
+                ? "1px solid rgba(100,116,139,0.35)"
+                : "1px solid rgba(56,189,248,0.35)";
+            const cardBg = isResponding
+              ? "rgba(251,146,60,0.08)"
+              : isOffline
+                ? "rgba(100,116,139,0.06)"
+                : "rgba(56,189,248,0.08)";
+            const goIdColor = isResponding
+              ? "#fdba74"
+              : isOffline
+                ? "#94a3b8"
+                : "#bae6fd";
+            const statusColor = isResponding
+              ? "#fdba74"
+              : isOffline
+                ? "#94a3b8"
+                : "#bae6fd";
 
             return (
               <div
                 key={officer.id || officer.badge || index}
                 style={{
-                  border: "1px solid rgba(56,189,248,0.35)",
-                  background: "rgba(56,189,248,0.08)",
+                  border: cardBorder,
+                  background: cardBg,
                   color: C.textPrimary,
                   borderRadius: 12,
                   padding: 10,
@@ -1101,12 +1399,7 @@ function OfficerList({ officerCount, officers }) {
               >
                 <strong>{officer.name || "Ground Officer"}</strong>
 
-                <span
-                  style={{
-                    color: "#bae6fd",
-                    fontWeight: 900,
-                  }}
-                >
+                <span style={{ color: goIdColor, fontWeight: 900 }}>
                   {" "}
                   · {goId}
                 </span>
@@ -1120,7 +1413,7 @@ function OfficerList({ officerCount, officers }) {
 
                 <br />
 
-                <span style={{ color: C.textSecondary, fontSize: 12 }}>
+                <span style={{ color: statusColor, fontSize: 12 }}>
                   Status: {officer.status || "standby"}
                 </span>
               </div>
@@ -1146,7 +1439,9 @@ function Legend() {
     >
       <div style={{ color: "#fca5a5" }}>Red dot = Critical incident</div>
       <div style={{ color: "#fde68a" }}>Yellow dot = Warning incident</div>
-      <div style={{ color: "#bae6fd" }}>Blue dot = Ground officer</div>
+      <div style={{ color: "#bae6fd" }}>Blue dot = Available officer</div>
+      <div style={{ color: "#fdba74" }}>Orange dot = Responding officer</div>
+      <div style={{ color: "#94a3b8" }}>Gray dot = Offline / standby officer</div>
       <div style={{ color: "#86efac" }}>📹 Green = Normal camera</div>
       <div style={{ color: "#fca5a5" }}>📹 Red = Incident camera</div>
     </div>

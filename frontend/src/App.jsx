@@ -78,11 +78,47 @@ export default function App() {
     }
   }, []);
 
+  // Poll faster on the map page (2s) so new incidents and officer moves appear quickly.
+  // All other pages keep the 5s interval.
+  const pollInterval = page === "map" ? 2_000 : 5_000;
+
   useEffect(() => {
     syncFromBackend();
-    const id = setInterval(syncFromBackend, 5_000);
+    const id = setInterval(syncFromBackend, pollInterval);
     return () => clearInterval(id);
+  }, [syncFromBackend, pollInterval]);
+
+  // Sync immediately when the user switches back to this tab.
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        syncFromBackend();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
   }, [syncFromBackend]);
+
+  // SSE: sync the moment the backend fires an event (new incident, officer move, dispatch).
+  // Falls back gracefully to the interval poll above if the connection drops.
+  useEffect(() => {
+    if (!loggedIn) return;
+
+    const base = import.meta.env.VITE_API_BASE || "http://localhost:8000/api";
+    const source = new EventSource(`${base}/events`);
+
+    source.onmessage = () => {
+      syncFromBackend();
+    };
+
+    // On error the browser retries automatically; we just close to avoid duplicate
+    // connections — the interval poll keeps data fresh in the meantime.
+    source.onerror = () => {
+      source.close();
+    };
+
+    return () => source.close();
+  }, [loggedIn, syncFromBackend]);
 
   const handleAnalysisComplete = async ({ videoUrl, filename, result }) => {
     const time = new Date().toLocaleTimeString([], {
@@ -111,6 +147,7 @@ export default function App() {
       await syncFromBackend();
     } catch (err) {
       console.warn("Dispatch failed:", err.message);
+      throw err;
     }
   };
 
@@ -137,6 +174,7 @@ export default function App() {
        <LocationMapPage
          incidents={incidents}
          groundOfficers={groundOfficers}
+         dispatches={dispatches}
          locationMap={locationMap}
          onNav={setPage}
          onDispatch={handleDispatch}
