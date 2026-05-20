@@ -165,10 +165,10 @@ def test_update_dispatch_to_in_progress_updates_incident_status(test_dispatch, t
 
 
 # ---------------------------------------------------------------------------
-# Test 15 — PATCH dispatch to resolved returns officer to standby and closes incident
+# Test 15 — PATCH dispatch to resolved returns officer to patrolling and closes incident
 # ---------------------------------------------------------------------------
 
-def test_update_dispatch_to_resolved_returns_officer_standby_and_closes_incident(
+def test_update_dispatch_to_resolved_returns_officer_patrolling_and_closes_incident(
     test_dispatch, test_incident
 ):
     req = UpdateDispatchRequest(status="resolved")
@@ -177,7 +177,7 @@ def test_update_dispatch_to_resolved_returns_officer_standby_and_closes_incident
 
     assert updated["status"] == "resolved"
 
-    # Officer back to standby
+    # Officer back to patrolling
     officer = next(o for o in state.officers_db if o["id"] == "go1")
     assert officer["status"] == "patrolling"
 

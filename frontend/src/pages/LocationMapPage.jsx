@@ -192,6 +192,7 @@ export function LocationMapPage({
     );
 
     if (!selectedFloorKey || !selectedStillExists) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedFloorKey(renderableFloors[0].key);
     }
   }, [renderableFloors, selectedFloorKey]);

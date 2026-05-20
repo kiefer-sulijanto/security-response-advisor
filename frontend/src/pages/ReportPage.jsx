@@ -413,7 +413,6 @@ export function ReportPage({ analyses, incidents, dispatches, groundOfficers, cr
   const timeStr   = now.toLocaleTimeString("en-SG", { hour: "2-digit", minute: "2-digit" });
 
   const criticalInc = incidents.filter(i => i.severity === "critical");
-  const resolved    = incidents.filter(i => i.status === "resolved");
   const active      = incidents.filter(i => i.status !== "resolved");
 
   if (finalized) {

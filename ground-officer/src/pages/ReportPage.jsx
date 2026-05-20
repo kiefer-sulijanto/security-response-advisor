@@ -89,7 +89,7 @@ export default function ReportPage({ officer, onAddReport, reportForm, onSetRepo
 
           <button
             style={{
-              width: '100%', padding: '14px 20px', borderRadius: 12, border: 'none', cursor: 'pointer',
+              width: '100%', padding: '14px 20px', borderRadius: 12, cursor: 'pointer',
               background: '#111c2b', border: '1px solid #1a2840',
               color: '#F07820', fontSize: 14, fontWeight: 700,
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,

@@ -158,6 +158,9 @@ export function CameraFeed({ cam }) {
 
     connect();
 
+    const videoEl = videoRef.current;
+    const imageEl = imageRef.current;
+
     return () => {
       stopped = true;
 
@@ -167,15 +170,15 @@ export function CameraFeed({ cam }) {
         stream.getTracks().forEach((t) => t.stop());
       }
 
-      if (videoRef.current) {
-        videoRef.current.srcObject = null;
-        videoRef.current.src = "";
+      if (videoEl) {
+        videoEl.srcObject = null;
+        videoEl.src = "";
       }
 
-      if (imageRef.current) {
-        imageRef.current.onload = null;
-        imageRef.current.onerror = null;
-        imageRef.current.src = "";
+      if (imageEl) {
+        imageEl.onload = null;
+        imageEl.onerror = null;
+        imageEl.src = "";
       }
     };
   }, [cam]);

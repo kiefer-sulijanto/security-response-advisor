@@ -83,6 +83,7 @@ export default function App() {
   const pollInterval = page === "map" ? 2_000 : 5_000;
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     syncFromBackend();
     const id = setInterval(syncFromBackend, pollInterval);
     return () => clearInterval(id);
