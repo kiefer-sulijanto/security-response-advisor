@@ -374,7 +374,7 @@ def test_dispatch_updates_map_assignment_state():
                 "id": "go_dispatch_test",
                 "name": "Officer Dispatch Test",
                 "badge": "SO-DISPATCH",
-                "status": "standby",
+                "status": "patrolling",
                 "location": "server_room",
                 "task": None,
                 "online": True,

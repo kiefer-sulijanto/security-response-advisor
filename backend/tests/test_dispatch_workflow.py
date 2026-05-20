@@ -62,6 +62,10 @@ def test_incident() -> dict:
 @pytest.fixture
 def test_dispatch(test_incident) -> dict:
     """Create a dispatch for test_incident assigned to officer go1."""
+    officer = next(o for o in state.officers_db if o["id"] == "go1")
+    officer["status"] = "patrolling"
+    officer["online"] = True
+
     req = CreateDispatchRequest(
         incidentId=test_incident["id"],
         officerId="go1",
@@ -112,6 +116,10 @@ def test_create_incident_via_route():
 # ---------------------------------------------------------------------------
 
 def test_create_dispatch_sets_officer_responding_and_links_incident(test_incident):
+    officer = next(o for o in state.officers_db if o["id"] == "go1")
+    officer["status"] = "patrolling"
+    officer["online"] = True
+
     req = CreateDispatchRequest(
         incidentId=test_incident["id"],
         officerId="go1",
@@ -171,7 +179,7 @@ def test_update_dispatch_to_resolved_returns_officer_standby_and_closes_incident
 
     # Officer back to standby
     officer = next(o for o in state.officers_db if o["id"] == "go1")
-    assert officer["status"] == "standby"
+    assert officer["status"] == "patrolling"
 
     # Incident marked resolved
     incident = next(i for i in state.incidents_db if i["id"] == test_incident["id"])
@@ -230,6 +238,10 @@ def test_get_reports_returns_all_submitted_reports():
 
 def test_manual_state_reset_clears_all_collections(test_incident):
     # Create dispatch and report so state is dirty
+    officer = next(o for o in state.officers_db if o["id"] == "go2")
+    officer["status"] = "patrolling"
+    officer["online"] = True
+
     d_req = CreateDispatchRequest(
         incidentId=test_incident["id"],
         officerId="go2",
@@ -261,8 +273,8 @@ def test_manual_state_reset_clears_all_collections(test_incident):
     assert state.dispatches_db == []
     assert state.reports_db == []
 
-    # Officers restored to initial standby state
+    # Officers restored to initial offline state
     assert len(state.officers_db) == len(state.INITIAL_OFFICERS_DB)
     for officer in state.officers_db:
-        assert officer["status"] == "standby"
+        assert officer["status"] == "offline"
         assert officer["task"] is None
