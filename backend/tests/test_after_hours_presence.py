@@ -21,6 +21,7 @@ def test_person_during_allowed_hours_does_not_emit_after_hours():
     assert EventType.AFTER_HOURS_PRESENCE not in event_types
 
 
+
 def test_person_after_hours_emits_after_hours_presence():
     detection = {
         "label": "person",
