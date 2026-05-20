@@ -17,16 +17,22 @@ export function GroundOfficersPage({ groundOfficers, dispatches, incidents, onDi
   const [instrPrio,    setInstrPrio]    = useState("high");
   const [instrIncident,setInstrIncident]= useState("");
   const [successFor,   setSuccessFor]   = useState(null);
+  const [dispatchError,setDispatchError]= useState("");
 
-  const handleDispatch = (officerId) => {
-    if (!instrText.trim()) return;
-    onDispatch({ officerId, instruction: instrText.trim(), priority: instrPrio, incidentId: instrIncident || null });
-    setInstrText("");
-    setInstrPrio("high");
-    setInstrIncident("");
-    setExpandedId(null);
-    setSuccessFor(officerId);
-    setTimeout(() => setSuccessFor(null), 3000);
+  const handleDispatch = async (officerId) => {
+    if (!instrText.trim() || !instrIncident) return;
+    setDispatchError("");
+    try {
+      await onDispatch({ officerId, instruction: instrText.trim(), priority: instrPrio, incidentId: instrIncident });
+      setInstrText("");
+      setInstrPrio("high");
+      setInstrIncident("");
+      setExpandedId(null);
+      setSuccessFor(officerId);
+      setTimeout(() => setSuccessFor(null), 3000);
+    } catch (err) {
+      setDispatchError(err.message || "Dispatch failed. Please try again.");
+    }
   };
 
   const offlineCount   = groundOfficers.filter(g => g.status === "standby" || g.status === "offline").length;
@@ -148,17 +154,17 @@ export function GroundOfficersPage({ groundOfficers, dispatches, incidents, onDi
                   {/* Dispatch form */}
                   {isOpen && (
                     <div style={{ padding: "14px 18px", background: "rgba(240,120,32,0.04)", borderTop: `1px solid ${C.border}` }}>
-                      {/* Link to incident (optional) */}
+                      {/* Link to incident (required) */}
                       <div style={{ marginBottom: 10 }}>
-                        <label style={labelStyle}>Link to Incident (optional)</label>
+                        <label style={labelStyle}>Incident *</label>
                         <select
                           value={instrIncident}
-                          onChange={e => setInstrIncident(e.target.value)}
+                          onChange={e => { setInstrIncident(e.target.value); setDispatchError(""); }}
                           style={inputStyle}
                         >
-                          <option value="">— None —</option>
+                          <option value="">— Select Incident —</option>
                           {incidents.map(inc => (
-                            <option key={inc.id} value={inc.id}>{inc.id} · {inc.videoName} ({inc.severity})</option>
+                            <option key={inc.id} value={inc.id}>{inc.id} · {inc.videoName || inc.incidentType} ({inc.severity || inc.flag})</option>
                           ))}
                         </select>
                       </div>
@@ -191,14 +197,23 @@ export function GroundOfficersPage({ groundOfficers, dispatches, incidents, onDi
                         />
                       </div>
 
+                      {dispatchError && expandedId === officer.id && (
+                        <div style={{
+                          marginBottom: 10, padding: "9px 12px",
+                          background: "rgba(226,75,74,0.1)", border: `1px solid rgba(226,75,74,0.35)`,
+                          borderRadius: 8, fontSize: 12, color: "#e24b4a",
+                        }}>
+                          {dispatchError}
+                        </div>
+                      )}
                       <button
                         onClick={() => handleDispatch(officer.id)}
-                        disabled={!instrText.trim()}
+                        disabled={!instrText.trim() || !instrIncident}
                         style={{
                           width: "100%", padding: "10px 0", borderRadius: 8, border: "none",
-                          background: instrText.trim() ? C.green : C.border,
-                          color: instrText.trim() ? "#fff" : C.textMuted,
-                          fontSize: 13, fontWeight: 700, cursor: instrText.trim() ? "pointer" : "not-allowed",
+                          background: instrText.trim() && instrIncident ? C.green : C.border,
+                          color: instrText.trim() && instrIncident ? "#fff" : C.textMuted,
+                          fontSize: 13, fontWeight: 700, cursor: instrText.trim() && instrIncident ? "pointer" : "not-allowed",
                           transition: "all .15s",
                         }}
                       >
@@ -260,7 +275,7 @@ export function GroundOfficersPage({ groundOfficers, dispatches, incidents, onDi
   );
 }
 
-function MiniStat({ label, value, accent }) {
+function MiniStat({ label, value }) {
   return (
     <div style={card({ padding: "16px 18px" })}>
       <div style={{ marginBottom: 12 }}>

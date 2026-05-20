@@ -37,7 +37,9 @@ export default function App() {
   const handleSetPatrolLocation = useCallback(async (nextLocation) => {
     if (!officer || !nextLocation?.locationKey) return
 
-    setPatrolLocation(nextLocation)
+    const previousLocation = patrolLocation;
+    setPatrolLocation(nextLocation);
+
 
     try {
       await api.updateMyStatus(officer.id, {
@@ -62,6 +64,7 @@ export default function App() {
       setBackendOnline(true)
     } catch (err) {
       console.warn('Could not update patrol location:', err.message)
+      setPatrolLocation(previousLocation);
       setBackendOnline(false)
     }
   }, [officer])
