@@ -33,6 +33,39 @@ export default function App() {
   const [reportSubmitted, setReportSubmitted] = useState(false)
   const [reportErrors,    setReportErrors]    = useState({})
 
+
+  const handleSetPatrolLocation = useCallback(async (nextLocation) => {
+    if (!officer || !nextLocation?.locationKey) return
+
+    setPatrolLocation(nextLocation)
+
+    try {
+      await api.updateMyStatus(officer.id, {
+        location: nextLocation.locationKey,
+        status: 'patrolling',
+        task: `Patrolling ${nextLocation.label}`,
+        online: true,
+      })
+
+      setOfficer(prev =>
+        prev
+          ? {
+              ...prev,
+              location: nextLocation.locationKey,
+              status: 'patrolling',
+              task: `Patrolling ${nextLocation.label}`,
+              online: true,
+            }
+          : prev
+      )
+
+      setBackendOnline(true)
+    } catch (err) {
+      console.warn('Could not update patrol location:', err.message)
+      setBackendOnline(false)
+    }
+  }, [officer])
+
   // Poll backend every 8 seconds for new dispatches after login
   const syncAlerts = useCallback(async () => {
     if (!officer) return
@@ -141,7 +174,7 @@ export default function App() {
         unreadAlerts={unreadAlerts}
         onLogout={handleLogout}
         patrolLocation={patrolLocation}
-        onSetPatrolLocation={setPatrolLocation}
+        onSetPatrolLocation={handleSetPatrolLocation}
         patrolFloor={patrolFloor}
         onSetPatrolFloor={setPatrolFloor}
         reportForm={reportForm}

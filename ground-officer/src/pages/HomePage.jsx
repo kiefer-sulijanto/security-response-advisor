@@ -11,30 +11,158 @@ const FLOOR_PLANS = {
   floor1: {
     label: 'Floor 1',
     rooms: [
-      { id: 'server-room',  lines: ['Server', 'Room'],        x: 2,   y: 2,   w: 80,  h: 50,  loc: 'Server Room' },
-      { id: 'meeting-room', lines: ['Meeting', 'Room'],       x: 84,  y: 2,   w: 90,  h: 50,  loc: 'Meeting Room' },
-      { id: 'multipurpose', lines: ['Multi-Purpose', 'Room'], x: 176, y: 2,   w: 122, h: 50,  loc: 'Multi-Purpose Room' },
-      { id: 'gathering',    lines: ['Gathering', 'Area'],     x: 2,   y: 54,  w: 296, h: 90,  loc: 'Gathering Area' },
-      { id: 'conference',   lines: ['Conference', 'Room'],    x: 2,   y: 146, w: 80,  h: 62,  loc: 'Conference Room' },
-      { id: 'canteen',      lines: ['Canteen'],               x: 84,  y: 146, w: 90,  h: 62,  loc: 'Canteen' },
-      { id: 'lobby',        lines: ['Lobby'],                 x: 176, y: 146, w: 122, h: 62,  loc: 'Lobby' },
+      {
+        id: 'server-room',
+        lines: ['Server', 'Room'],
+        x: 2,
+        y: 2,
+        w: 80,
+        h: 50,
+        loc: 'Server Room',
+        locationKey: 'server_room',
+      },
+      {
+        id: 'meeting-room',
+        lines: ['Meeting', 'Room'],
+        x: 84,
+        y: 2,
+        w: 90,
+        h: 50,
+        loc: 'Meeting Room',
+        locationKey: 'meeting_room',
+      },
+      {
+        id: 'multipurpose',
+        lines: ['Multi-Purpose', 'Room'],
+        x: 176,
+        y: 2,
+        w: 122,
+        h: 50,
+        loc: 'Multi-Purpose Room',
+        locationKey: 'multi_purpose_room',
+      },
+      {
+        id: 'gathering',
+        lines: ['Gathering', 'Area'],
+        x: 2,
+        y: 54,
+        w: 296,
+        h: 90,
+        loc: 'Gathering Area',
+        locationKey: 'gathering_area',
+      },
+      {
+        id: 'conference',
+        lines: ['Conference', 'Room'],
+        x: 2,
+        y: 146,
+        w: 80,
+        h: 62,
+        loc: 'Conference Room',
+        locationKey: 'conference_room',
+      },
+      {
+        id: 'canteen',
+        lines: ['Canteen'],
+        x: 84,
+        y: 146,
+        w: 90,
+        h: 62,
+        loc: 'Canteen',
+        locationKey: 'canteen',
+      },
+      {
+        id: 'lobby',
+        lines: ['Lobby'],
+        x: 176,
+        y: 146,
+        w: 122,
+        h: 62,
+        loc: 'Lobby',
+        locationKey: 'lobby',
+      },
     ],
   },
+
   floor2: {
     label: 'Floor 2',
     rooms: [
-      { id: 'ceo',       lines: ['CEO'],               x: 2,   y: 2,   w: 90,  h: 46,  loc: 'CEO Office' },
-      { id: 'manager',   lines: ['Manager'],           x: 94,  y: 2,   w: 100, h: 46,  loc: 'Manager Office' },
-      { id: 'executive', lines: ['Executive'],         x: 196, y: 2,   w: 102, h: 46,  loc: 'Executive Office' },
-      { id: 'office',    lines: ['Office', 'Area'],    x: 2,   y: 50,  w: 240, h: 158, loc: 'Office Area' },
-      { id: 'command',   lines: ['Command', 'Centre'], x: 244, y: 50,  w: 54,  h: 158, loc: 'Control Room' },
+      {
+        id: 'ceo',
+        lines: ['CEO'],
+        x: 2,
+        y: 2,
+        w: 90,
+        h: 46,
+        loc: 'CEO Office',
+        locationKey: 'ceo_office',
+      },
+      {
+        id: 'manager',
+        lines: ['Manager'],
+        x: 94,
+        y: 2,
+        w: 100,
+        h: 46,
+        loc: 'Manager Office',
+        locationKey: 'manager_office',
+      },
+      {
+        id: 'executive',
+        lines: ['Executive'],
+        x: 196,
+        y: 2,
+        w: 102,
+        h: 46,
+        loc: 'Executive Office',
+        locationKey: 'executive_office',
+      },
+      {
+        id: 'office',
+        lines: ['Office', 'Area'],
+        x: 2,
+        y: 50,
+        w: 240,
+        h: 158,
+        loc: 'Office Area',
+        locationKey: 'office_area',
+      },
+      {
+        id: 'command',
+        lines: ['Command', 'Centre'],
+        x: 244,
+        y: 50,
+        w: 54,
+        h: 158,
+        loc: 'Command Center',
+        locationKey: 'command_center',
+      },
     ],
   },
+
   underground: {
     label: 'Underground',
     rooms: [
-      { id: 'parking', lines: ['Parking', 'Area'], x: 2,   y: 2,  w: 240, h: 206, loc: 'Parking Lot' },
-      { id: 'storage', lines: ['Storage'],         x: 244, y: 2,  w: 54,  h: 206, loc: 'Storage' },
+      {
+        id: 'parking',
+        lines: ['Parking', 'Area'],
+        x: 2,
+        y: 2,
+        w: 240,
+        h: 206,
+        loc: 'Parking Area',
+        locationKey: 'parking_area',
+      },
+      {
+        id: 'storage',
+        lines: ['Store', 'Room'],
+        x: 244,
+        y: 2,
+        w: 54,
+        h: 206,
+        loc: 'Store Room',
+        locationKey: 'store_room',
+      },
     ],
   },
 }
@@ -59,10 +187,18 @@ export default function HomePage({ officer, alerts, reports, onNavigate, patrolL
 
   const plan = FLOOR_PLANS[floor]
 
-  const handleRoomClick = (room) => {
-    if (!room.loc) return
-    const isSame = myLocation?.floor === floor && myLocation?.roomId === room.id
-    setMyLocation(isSame ? null : { floor, roomId: room.id, label: room.loc, floorLabel: plan.label })
+  const handleRoomClick = async (room) => {
+    if (!room.locationKey) return
+
+    const nextLocation = {
+      floor,
+      roomId: room.id,
+      label: room.loc,
+      floorLabel: plan.label,
+      locationKey: room.locationKey,
+    }
+
+    await setMyLocation(nextLocation)
   }
 
   return (
