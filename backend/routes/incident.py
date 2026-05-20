@@ -7,6 +7,7 @@ from app import state
 from app.helpers import _normalize_flag, _pick_standby_officer
 from recommendation_AI.incident_analysis import get_advisory
 from schema import AnalyzeRequest, CreateIncidentRequest, UpdateIncidentRequest
+from routes.events import notify
 
 router = APIRouter()
 
@@ -73,6 +74,7 @@ def create_incident(req: CreateIncidentRequest):
         "snapshot_base64": req.snapshot_base64,
     }
     state.incidents_db.append(incident)
+    notify("incident_created")
     return incident
 
 
@@ -84,5 +86,6 @@ def update_incident(incident_id: str, req: UpdateIncidentRequest):
                 incident["status"] = req.status
             if req.assignedTo is not None:
                 incident["assignedTo"] = req.assignedTo
+            notify("incident_updated")
             return incident
     raise HTTPException(status_code=404, detail="Incident not found")

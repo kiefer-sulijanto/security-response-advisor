@@ -5,6 +5,7 @@ from schema import UpdateOfficerRequest
 from datetime import datetime, timezone
 
 from config.locations import is_valid_location
+from routes.events import notify
 
 
 router = APIRouter()
@@ -40,5 +41,6 @@ def update_officer(officer_id: str, req: UpdateOfficerRequest):
             if req.online is not None:
                 officer["online"] = req.online
                 officer["lastSeenAt"] = _now_iso()
+            notify("officer_updated")
             return officer
     raise HTTPException(status_code=404, detail="Officer not found")

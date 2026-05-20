@@ -9,6 +9,7 @@ from schema import CreateDispatchRequest, UpdateDispatchRequest
 
 from datetime import datetime, timezone
 from config.locations import LOCATIONS
+from routes.events import notify
 
 router = APIRouter()
 
@@ -117,6 +118,7 @@ def create_dispatch(req: CreateDispatchRequest):
         "createdAt": now.isoformat(),
     }
     state.dispatches_db.append(dispatch)
+    notify("dispatch_created")
     return dispatch
 
 
@@ -157,5 +159,6 @@ def update_dispatch(dispatch_id: str, req: UpdateDispatchRequest):
                         break
                 
 
+            notify("dispatch_updated")
             return dispatch
     raise HTTPException(status_code=404, detail="Dispatch not found")

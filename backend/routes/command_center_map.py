@@ -32,7 +32,12 @@ def _get_highest_priority(active_incidents: list[dict]) -> str:
     highest = "green"
 
     for incident in active_incidents:
-        priority = str(incident.get("priority") or "green").lower()
+        priority = str(
+            incident.get("priority")
+            or incident.get("flag")
+            or incident.get("severity")
+            or "green"
+        ).lower()
 
         if priority_rank.get(priority, 0) > priority_rank.get(highest, 0):
             highest = priority
@@ -101,7 +106,7 @@ def get_command_center_map():
         for officer in state.officers_db:
             officer_location = officer.get("location") or officer.get("current_location")
 
-            if officer_location == location_key:
+            if officer_location == location_key and officer.get("online"):
                 officers.append(_format_officer_for_map(officer))
 
         highest_priority = _get_highest_priority(active_incidents)
