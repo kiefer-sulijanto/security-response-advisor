@@ -23,7 +23,7 @@ lerna-debug.log*
 *.local
 
 frontend/.env
-frontend/.env.*
+!frontend/.env.example
 ground-officer/.env
 ground-officer/.env.*
 demo-trigger/.env
