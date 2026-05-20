@@ -1,3 +1,4 @@
+import asyncio
 import sys
 import os
 from datetime import datetime
@@ -21,9 +22,17 @@ from routes import (
     demo_router,
     command_center_map_router,
     recommendations_router,
+    events_router,
 )
+from routes.events import set_event_loop
 
 app = FastAPI(title="Certis Security Management API")
+
+
+@app.on_event("startup")
+async def on_startup():
+    # Capture the running event loop so notify() can push from sync route handlers.
+    set_event_loop(asyncio.get_running_loop())
 
 frontend_origins = [
     origin.strip()
@@ -54,6 +63,8 @@ app.include_router(pipeline_router)
 app.include_router(demo_router)
 app.include_router(command_center_map_router)
 app.include_router(recommendations_router)
+app.include_router(events_router)
+
 @app.get("/health")
 def health():
     return {"status": "ok", "timestamp": datetime.now().isoformat()}
