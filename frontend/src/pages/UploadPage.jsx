@@ -4,13 +4,14 @@ import { TopBar } from "../components/TopBar";
 import { Spinner } from "../components/ui";
 import { extractFramesEveryNSeconds } from "../services/videoUtils";
 import { runPipelineMultiFrameAnalysis } from "../services/pipelineAnalysis";
+import { DEFAULT_LOCATION, LOCATION_OPTIONS } from "../config/locations";
 
 
 export function UploadPage({ onAnalysisComplete }) {
   const [file, setFile]           = useState(null);
   const [dragging, setDragging]   = useState(false);
   const [hovering, setHovering]   = useState(false);
-  const [location, setLocation] = useState("server_room");
+  const [location, setLocation] = useState(DEFAULT_LOCATION);
   const [status, setStatus]       = useState("idle"); // idle | extracting | analyzing | error
   const [statusLabel, setStatusLabel] = useState("");
   const [errorMsg, setErrorMsg]   = useState("");
@@ -125,11 +126,11 @@ export function UploadPage({ onAnalysisComplete }) {
               onChange={(e) => setLocation(e.target.value)}
               style={ctxInput(C)}
             >
-              <option value="server_room">Server Room</option>
-              <option value="lobby">Lobby</option>
-              <option value="gate_a">Gate A</option>
-              <option value="reception">Reception</option>
-              <option value="restricted_area">Restricted Area</option>
+              {LOCATION_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
             </select>
           </div>
 

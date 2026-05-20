@@ -90,6 +90,8 @@ export function CameraFeed({ cam }) {
     }
 
     function startProcessing(sourceType) {
+      if (cam.processingEnabled === false) return;
+
       const intervalMs = cam.processingIntervalMs || 1000;
 
       if (timer) clearInterval(timer);
