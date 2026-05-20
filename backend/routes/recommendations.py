@@ -6,7 +6,7 @@ from config.locations import LOCATIONS
 
 router = APIRouter(prefix="/api/incidents", tags=["Incident Recommendations"])
 
-AVAILABLE_OFFICER_STATUSES = {"standby"}
+AVAILABLE_OFFICER_STATUSES = {"patrolling"}
 
 
 def _get_location_label(location_key: str | None) -> str:
@@ -39,13 +39,18 @@ def _get_incident_location(incident: dict) -> str | None:
 
 def _is_available_officer(officer: dict) -> bool:
     status = str(officer.get("status", "")).lower()
+    online = bool(officer.get("online"))
 
     assigned_incident_id = (
         officer.get("assignedIncidentId")
         or officer.get("assigned_incident_id")
     )
 
-    return status in AVAILABLE_OFFICER_STATUSES and not assigned_incident_id
+    return (
+        online
+        and status in AVAILABLE_OFFICER_STATUSES
+        and not assigned_incident_id
+    )
 
 
 def _get_reason(distance_score: int) -> str:

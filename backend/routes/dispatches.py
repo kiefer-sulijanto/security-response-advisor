@@ -68,6 +68,22 @@ def create_dispatch(req: CreateDispatchRequest):
     if linked_officer is None:
         raise HTTPException(status_code=404, detail="Officer not found")
 
+    assigned_incident_id = (
+        linked_officer.get("assignedIncidentId")
+        or linked_officer.get("assigned_incident_id")
+    )
+
+    if (
+        not linked_officer.get("online")
+        or str(linked_officer.get("status", "")).lower() != "patrolling"
+        or assigned_incident_id
+    ):
+        raise HTTPException(
+            status_code=409,
+            detail="Officer is not available for dispatch",
+        )
+
+
     if linked_incident is None:
         raise HTTPException(status_code=404, detail="Incident not found")
 
@@ -126,10 +142,12 @@ def update_dispatch(dispatch_id: str, req: UpdateDispatchRequest):
             elif req.status == "resolved":
                 for officer in state.officers_db:
                     if officer["id"] == dispatch["officerId"]:
-                        officer["status"] = "standby"
+
+                        officer_is_online = bool(officer.get("online"))
+                        officer["status"] = "patrolling" if officer_is_online else "offline"
                         officer["assignedIncidentId"] = None
                         officer["assigned_incident_id"] = None
-                        officer["task"] = None
+                        officer["task"] = "On Patrol" if officer_is_online else None
                         officer["lastSeenAt"] = _now_iso()
                         break
                 for incident in state.incidents_db:

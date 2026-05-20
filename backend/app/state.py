@@ -3,16 +3,16 @@ from services.pipeline import PipelineService
 from config.cameras import CAMERA_REGISTRY
 
 officers_db: list[dict] = [
-    {"id": "go1",  "name": "Richard Woods",   "badge": "SO-1001", "status": "standby", "location": "lobby",      "task": None, "online": False},
-    {"id": "go2",  "name": "Carolyn Fuller",   "badge": "SO-1002", "status": "standby", "location": "gathering_area",         "task": None, "online": False},
-    {"id": "go3",  "name": "Stephen Davies",   "badge": "SO-1003", "status": "standby", "location": "parking_area",     "task": None, "online": False},
-    {"id": "go4",  "name": "Franklin Gibson",  "badge": "SO-1004", "status": "standby", "location": "canteen",  "task": None, "online": False},
-    {"id": "go5",  "name": "Carol Barnes",     "badge": "SO-1005", "status": "standby", "location": "server_room",    "task": None, "online": False},
-    {"id": "go6",  "name": "Eric Diaz",        "badge": "SO-1006", "status": "standby", "location": "meeting_room",       "task": None, "online": False},
-    {"id": "go7",  "name": "Alex Hugh",        "badge": "SO-1007", "status": "standby", "location": "conference_room",       "task": None, "online": False},
-    {"id": "go8",  "name": "Sarah Moreno",     "badge": "SO-1008", "status": "standby", "location": "office_area",      "task": None, "online": False},
-    {"id": "go9",  "name": "Gilbert Leonard",  "badge": "SO-1009", "status": "standby", "location": "command_center",     "task": None, "online": False},
-    {"id": "go10", "name": "Tyson Bernard",    "badge": "SO-1010", "status": "standby", "location": "command_center",   "task": None, "online": False},
+    {"id": "go1",  "name": "Richard Woods",   "badge": "SO-1001", "status": "offline", "location": "lobby",      "task": None, "online": False},
+    {"id": "go2",  "name": "Carolyn Fuller",   "badge": "SO-1002", "status": "offline", "location": "gathering_area",         "task": None, "online": False},
+    {"id": "go3",  "name": "Stephen Davies",   "badge": "SO-1003", "status": "offline", "location": "parking_area",     "task": None, "online": False},
+    {"id": "go4",  "name": "Franklin Gibson",  "badge": "SO-1004", "status": "offline", "location": "canteen",  "task": None, "online": False},
+    {"id": "go5",  "name": "Carol Barnes",     "badge": "SO-1005", "status": "offline", "location": "server_room",    "task": None, "online": False},
+    {"id": "go6",  "name": "Eric Diaz",        "badge": "SO-1006", "status": "offline", "location": "meeting_room",       "task": None, "online": False},
+    {"id": "go7",  "name": "Alex Hugh",        "badge": "SO-1007", "status": "offline", "location": "conference_room",       "task": None, "online": False},
+    {"id": "go8",  "name": "Sarah Moreno",     "badge": "SO-1008", "status": "offline", "location": "office_area",      "task": None, "online": False},
+    {"id": "go9",  "name": "Gilbert Leonard",  "badge": "SO-1009", "status": "offline", "location": "command_center",     "task": None, "online": False},
+    {"id": "go10", "name": "Tyson Bernard",    "badge": "SO-1010", "status": "offline", "location": "command_center",   "task": None, "online": False},
 ]
 
 INITIAL_OFFICERS_DB = copy.deepcopy(officers_db)

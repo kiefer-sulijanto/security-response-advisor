@@ -37,8 +37,13 @@ def _normalize_flag(flag: str) -> str:
 
 
 def _pick_standby_officer() -> Optional[dict]:
-    standby = [o for o in state.officers_db if o["status"] == "standby"]
-    return standby[0] if standby else None
+    available = [
+        o for o in state.officers_db
+        if o.get("online")
+        and str(o.get("status", "")).lower() == "patrolling"
+        and not (o.get("assignedIncidentId") or o.get("assigned_incident_id"))
+    ]
+    return available[0] if available else None
 
 
 def _decode_base64_image(image_base64: str):
