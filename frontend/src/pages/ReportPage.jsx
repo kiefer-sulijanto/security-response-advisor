@@ -413,7 +413,6 @@ export function ReportPage({ analyses, incidents, dispatches, groundOfficers, cr
   const timeStr   = now.toLocaleTimeString("en-SG", { hour: "2-digit", minute: "2-digit" });
 
   const criticalInc = incidents.filter(i => i.severity === "critical");
-  const warningInc  = incidents.filter(i => i.severity === "warning");
   const resolved    = incidents.filter(i => i.status === "resolved");
   const active      = incidents.filter(i => i.status !== "resolved");
 
@@ -469,12 +468,11 @@ export function ReportPage({ analyses, incidents, dispatches, groundOfficers, cr
       <div style={{ padding: "24px 28px", display: "flex", flexDirection: "column", gap: 20 }}>
 
         {/* Stats overview */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 14 }}>
-          <MiniStat icon={<IconVideo />}     label="Videos Analyzed"   value={analyses.length}    accent={C.blue}  />
-          <MiniStat icon={<IconAlert />}     label="Critical Incidents" value={criticalInc.length} accent={C.red}   />
-          <MiniStat icon={<IconWarning />}   label="Warnings"           value={warningInc.length}  accent={C.amber} />
-          <MiniStat icon={<IconDispatch />}  label="GO Dispatches"      value={dispatches.length}  accent={C.green} />
-          <MiniStat icon={<IconClipboard />} label="GO Field Reports"   value={goReports.length}   accent={C.blue}  />
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 14 }}>
+          <MiniStat icon={<IconVideo />}     label="Videos Analyzed"  value={analyses.length}    accent={C.blue}  />
+          <MiniStat icon={<IconAlert />}     label="Incidents"        value={incidents.length}   accent={C.red}   />
+          <MiniStat icon={<IconDispatch />}  label="GO Dispatches"    value={dispatches.length}  accent={C.green} />
+          <MiniStat icon={<IconClipboard />} label="GO Field Reports" value={goReports.length}   accent={C.blue}  />
         </div>
 
         {/* Incident summary */}
@@ -799,7 +797,7 @@ export function ReportPage({ analyses, incidents, dispatches, groundOfficers, cr
                     onClick={() => {
                       setShowPicker(false);
                       try {
-                        generateExport(fmt.id, { analyses, incidents, dispatches, groundOfficers, goReports, notes });
+                        generateExport(fmt.id, { analyses, incidents, dispatches, groundOfficers, goReports, notes: "" });
                         setFinalized(true);
                       } catch (err) {
                         console.error("Export failed:", err);
@@ -836,7 +834,7 @@ export function ReportPage({ analyses, incidents, dispatches, groundOfficers, cr
 
 function getSourceInfo(inc) {
   const src = inc.source || "";
-  if (src === "CCTV Frame Pipeline") return { type: "video",  label: "Video Upload" };
+  if (src === "CCTV Frame Pipeline") return { type: "camera", label: "Live Camera"  };
   if (src === "CCTV Pipeline")       return { type: "camera", label: "Live Camera"  };
   if (src === "Access Log Pipeline") return { type: "access", label: "Access Log"   };
   return { type: "other", label: src || "—" };

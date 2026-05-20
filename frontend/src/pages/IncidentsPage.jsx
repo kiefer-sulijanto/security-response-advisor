@@ -49,7 +49,7 @@ const labelStyle = {
   textTransform: "uppercase", letterSpacing: "0.4px", marginBottom: 5,
 };
 const inputStyle = {
-  width: "100%", background: C.bg, border: `1px solid ${C.border}`,
+  width: "100%", boxSizing: "border-box", background: C.bg, border: `1px solid ${C.border}`,
   borderRadius: 8, color: C.textPrimary, fontSize: 13, padding: "9px 12px",
   outline: "none", fontFamily: font,
 };
@@ -57,6 +57,10 @@ const inputStyle = {
 export function IncidentsPage({ incidents, groundOfficers = [], analyses = [], onDispatch, onNav }) {
   const [filter,      setFilter]      = useState("all");
   const [dispatchFor, setDispatchFor] = useState(null);
+  const [expandedId,  setExpandedId]  = useState(null);
+  const [selOfficer,  setSelOfficer]  = useState("");
+  const [instrText,   setInstrText]   = useState("");
+  const [instrPrio,   setInstrPrio]   = useState("high");
 
   const openDispatch = (incId) => {
     setDispatchFor(incId);
@@ -64,10 +68,6 @@ export function IncidentsPage({ incidents, groundOfficers = [], analyses = [], o
     setInstrText("");
     setInstrPrio("high");
   };
-  const [expandedId,  setExpandedId]  = useState(null);
-  const [selOfficer,  setSelOfficer]  = useState("");
-  const [instrText,   setInstrText]   = useState("");
-  const [instrPrio,   setInstrPrio]   = useState("high");
 
   const getSeverity = (i) => i.severity || (i.flag === "red" ? "critical" : i.flag === "yellow" ? "warning" : "info");
   const filtered = filter === "all" ? incidents

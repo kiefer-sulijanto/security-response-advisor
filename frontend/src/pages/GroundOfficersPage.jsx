@@ -4,9 +4,10 @@ import { TopBar } from "../components/TopBar";
 import { Badge, StatusDot } from "../components/ui";
 
 const STATUS_META = {
-  responding: { label: "Responding",  color: "#e24b4a", dot: "critical" },
+  responding: { label: "Assigned",    color: "#e24b4a", dot: "critical" },
   patrolling: { label: "Patrolling",  color: "#efaf27", dot: "warning"  },
-  standby:    { label: "Standby",     color: "#4a9eff", dot: "info"     },
+  standby:    { label: "Offline",     color: "#4a9eff", dot: "info"     },
+  offline:    { label: "Offline",     color: "#4a9eff", dot: "info"     },
   off_duty:   { label: "Off Duty",    color: "#555960", dot: "info"     },
 };
 
@@ -28,8 +29,9 @@ export function GroundOfficersPage({ groundOfficers, dispatches, incidents, onDi
     setTimeout(() => setSuccessFor(null), 3000);
   };
 
-  const onDuty = groundOfficers.filter(g => g.status !== "off_duty");
-  const responding = groundOfficers.filter(g => g.status === "responding");
+  const offlineCount   = groundOfficers.filter(g => g.status === "standby" || g.status === "offline").length;
+  const patrollingCount = groundOfficers.filter(g => g.status === "patrolling").length;
+  const assignedCount  = groundOfficers.filter(g => g.status === "responding").length;
 
   return (
     <div style={{ flex: 1, overflow: "auto", background: C.bg, fontFamily: font, overscrollBehavior: "contain" }}>
@@ -39,27 +41,10 @@ export function GroundOfficersPage({ groundOfficers, dispatches, incidents, onDi
 
         {/* Summary row */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 14 }}>
-          <MiniStat label="On Duty"         value={onDuty.length}       accent={C.green} icon={
-            <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
-              <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-            </svg>
-          }/>
-          <MiniStat label="Responding"      value={responding.length}   accent={C.red}   icon={
-            <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-              <polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
-            </svg>
-          }/>
-          <MiniStat label="Patrolling"      value={groundOfficers.filter(g=>g.status==="patrolling").length} accent={C.amber} icon={
-            <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-            </svg>
-          }/>
-          <MiniStat label="Dispatches Today" value={dispatches.length}  accent={C.blue}  icon={
-            <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-              <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/>
-            </svg>
-          }/>
+          <MiniStat label="Offline"          value={offlineCount}    accent={C.blue}  />
+          <MiniStat label="Patrolling"       value={patrollingCount} accent={C.amber} />
+          <MiniStat label="Assigned"         value={assignedCount}   accent={C.red}   />
+          <MiniStat label="Dispatches Today" value={dispatches.length} accent={C.green} />
         </div>
 
         {/* Officer cards */}
@@ -98,7 +83,7 @@ export function GroundOfficersPage({ groundOfficers, dispatches, incidents, onDi
                           }} title="Online" />
                         )}
                       </div>
-                      <div style={{ fontSize: 12, color: C.textSecondary, marginTop: 1 }}>{officer.badge} · {officer.shift} Shift</div>
+                      <div style={{ fontSize: 12, color: C.textSecondary, marginTop: 1 }}>{officer.badge}{officer.shift ? ` · ${officer.shift} Shift` : ""}</div>
                       <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 6 }}>
                         <span style={{ width: 7, height: 7, borderRadius: "50%", background: meta.color, display: "inline-block",
                           boxShadow: officer.status === "responding" ? `0 0 0 3px ${meta.color}33` : "none" }} />
@@ -124,7 +109,9 @@ export function GroundOfficersPage({ groundOfficers, dispatches, incidents, onDi
                   <div style={{ padding: "0 18px 12px", borderBottom: `1px solid ${C.border}` }}>
                     <div style={{ fontSize: 11, color: C.textMuted, textTransform: "uppercase", letterSpacing: "0.4px", marginBottom: 4 }}>Current Task</div>
                     <div style={{ fontSize: 13, color: C.textPrimary }}>{officer.task}</div>
-                    <div style={{ fontSize: 11, color: C.textMuted, marginTop: 2 }}>Updated {officer.lastUpdate}</div>
+                    <div style={{ fontSize: 11, color: C.textMuted, marginTop: 2 }}>
+                      {officer.lastSeenAt ? `Updated ${new Date(officer.lastSeenAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : "Not yet updated"}
+                    </div>
                   </div>
 
                   {/* Recent dispatches to this officer */}
@@ -273,14 +260,13 @@ export function GroundOfficersPage({ groundOfficers, dispatches, incidents, onDi
   );
 }
 
-function MiniStat({ label, value, accent, icon }) {
+function MiniStat({ label, value, accent }) {
   return (
     <div style={card({ padding: "16px 18px" })}>
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 12 }}>
+      <div style={{ marginBottom: 12 }}>
         <span style={{ fontSize: 10, fontWeight: 700, color: C.textMuted, textTransform: "uppercase", letterSpacing: "0.5px" }}>
           {label}
         </span>
-        <span style={{ color: `${accent}66` }}>{icon}</span>
       </div>
       <div style={{ fontSize: 30, fontWeight: 800, color: C.textPrimary, lineHeight: 1 }}>{value}</div>
     </div>
@@ -300,7 +286,7 @@ const labelStyle = {
 };
 
 const inputStyle = {
-  width: "100%", background: C.bg, border: `1px solid ${C.border}`,
+  width: "100%", boxSizing: "border-box", background: C.bg, border: `1px solid ${C.border}`,
   borderRadius: 8, color: C.textPrimary, fontSize: 13, padding: "9px 12px",
   outline: "none", fontFamily: font, appearance: "none",
 };

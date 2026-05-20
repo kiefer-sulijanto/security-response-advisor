@@ -8,9 +8,10 @@ import { api } from "../services/api";
 import { UploadPanel } from "./UploadPage";
 
 const GO_STATUS_META = {
-  responding: { color: "#e24b4a", label: "Responding" },
+  responding: { color: "#e24b4a", label: "Assigned"   },
   patrolling: { color: "#efaf27", label: "Patrolling" },
-  standby:    { color: "#4a9eff", label: "Standby"    },
+  standby:    { color: "#4a9eff", label: "Offline"    },
+  offline:    { color: "#4a9eff", label: "Offline"    },
   off_duty:   { color: "#555960", label: "Off Duty"   },
 };
 
@@ -48,9 +49,11 @@ function CardHeader({ title, action, onAction }) {
 }
 
 export function DashboardPage({ onNav, onAnalysisComplete, analyses, incidents, groundOfficers = [], dispatches = [] }) {
-  const criticalCount = analyses.filter(a => a.result?.flag === "red").length;
-  const warningCount  = analyses.filter(a => a.result?.flag === "yellow").length;
+  const criticalCount  = analyses.filter(a => a.result?.flag === "red").length;
+  const warningCount   = analyses.filter(a => a.result?.flag === "yellow").length;
+  const threatCount    = criticalCount + warningCount;
   const activeIncidents = incidents.filter(i => i.status !== "resolved");
+  const activeOfficers = groundOfficers.filter(g => g.online);
 
   const [resetLoading, setResetLoading] = useState(false);
   const [resetError,   setResetError]   = useState("");
@@ -93,17 +96,17 @@ export function DashboardPage({ onNav, onAnalysisComplete, analyses, incidents, 
             />
             <StatCard
               label="Threats Detected"
-              value={criticalCount || "—"}
-              sub={criticalCount ? "Critical events" : "None so far"}
-              accent={criticalCount ? C.red : undefined}
+              value={threatCount || "—"}
+              sub={criticalCount ? `${criticalCount} critical, ${warningCount} warning` : warningCount ? `${warningCount} warnings` : "None so far"}
+              accent={criticalCount ? C.red : warningCount ? C.amber : undefined}
               icon={<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>}
             />
             <StatCard
-              label="Warnings"
-              value={warningCount || "—"}
-              sub={warningCount ? "Needs attention" : "None so far"}
-              accent={warningCount ? C.amber : undefined}
-              icon={<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>}
+              label="Active Ground Officers"
+              value={activeOfficers.length || "—"}
+              sub={activeOfficers.length ? `${activeOfficers.length} online` : "None online"}
+              accent={activeOfficers.length ? C.blue : undefined}
+              icon={<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>}
             />
             <StatCard
               label="Incidents Logged"

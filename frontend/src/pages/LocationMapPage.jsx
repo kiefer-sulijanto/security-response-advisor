@@ -346,7 +346,7 @@ function MapPanel({ floor, locations, activeDispatchMap, onNav }) {
           background: C.surface,
         }}
       >
-        <div style={{ fontSize: 18, fontWeight: 900 }}>{floor.label}</div>
+        <div style={{ fontSize: 18, fontWeight: 900, color: C.textPrimary }}>{floor.label}</div>
 
         <div
           style={{
@@ -470,13 +470,9 @@ function LocationArea({ location, activeDispatchMap, onNav }) {
 
       {!markersDisabled && (
         <CenterMarkers
-          incidents={incidents}
-          incidentCount={incidentCount}
           officers={officers}
           officerCount={officerCount}
-          priorityTheme={priorityTheme}
           activeDispatchMap={activeDispatchMap}
-          onNav={onNav}
         />
       )}
 
@@ -637,7 +633,9 @@ function CameraBadges({ cameras, hasIncident }) {
             fontWeight: 900,
           }}
         >
-          📹
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/>
+            </svg>
         </span>
       ))}
 
@@ -686,7 +684,7 @@ function SidePanel({
         boxShadow: "0 18px 44px rgba(0,0,0,0.22)",
       }}
     >
-      <h2 style={{ margin: 0, fontSize: 18, fontWeight: 900 }}>
+      <h2 style={{ margin: 0, fontSize: 18, fontWeight: 900, color: C.textPrimary }}>
         {floor.label}
       </h2>
 
@@ -728,7 +726,7 @@ function IncidentList({
 }) {
   return (
     <>
-      <h3 style={{ fontSize: 14, margin: "0 0 10px" }}>Active Incidents</h3>
+      <h3 style={{ fontSize: 14, margin: "0 0 10px", color: C.textPrimary }}>Active Incidents</h3>
 
       {incidentCount === 0 ? (
         <div
@@ -1074,7 +1072,7 @@ function IncidentDispatchCard({
             borderTop: "1px solid rgba(255,255,255,0.10)",
           }}
         >
-          <div style={{ fontSize: 13, fontWeight: 900, marginBottom: 8 }}>
+          <div style={{ fontSize: 13, fontWeight: 900, marginBottom: 8, color: C.textPrimary }}>
             Top 3 Nearest Available Officers
           </div>
 
@@ -1329,7 +1327,7 @@ function OfficerList({ officerCount, officers, activeDispatchMap }) {
         borderTop: `1px solid ${C.border}`,
       }}
     >
-      <h3 style={{ fontSize: 14, margin: "0 0 10px" }}>Officers</h3>
+      <h3 style={{ fontSize: 14, margin: "0 0 10px", color: C.textPrimary }}>Officers</h3>
 
       {officerCount === 0 ? (
         <div
@@ -1442,8 +1440,14 @@ function Legend() {
       <div style={{ color: "#bae6fd" }}>Blue dot = Available officer</div>
       <div style={{ color: "#fdba74" }}>Orange dot = Responding officer</div>
       <div style={{ color: "#94a3b8" }}>Gray dot = Offline / standby officer</div>
-      <div style={{ color: "#86efac" }}>📹 Green = Normal camera</div>
-      <div style={{ color: "#fca5a5" }}>📹 Red = Incident camera</div>
+      <div style={{ color: "#86efac", display: "flex", alignItems: "center", gap: 6 }}>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+        Green = Normal camera
+      </div>
+      <div style={{ color: "#fca5a5", display: "flex", alignItems: "center", gap: 6 }}>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+        Red = Incident camera
+      </div>
     </div>
   );
 }
