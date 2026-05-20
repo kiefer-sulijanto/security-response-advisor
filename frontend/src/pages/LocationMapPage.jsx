@@ -452,23 +452,9 @@ function LocationArea({ location, onNav }) {
 }
 
 function CenterMarkers({
-  incidents,
-  incidentCount,
   officers,
   officerCount,
-  priorityTheme,
-  onNav,
 }) {
-  const visibleIncidentDots =
-    incidents.length > 0
-      ? incidents.slice(0, 4)
-      : Array.from({ length: Math.min(incidentCount, 4) }, (_, index) => ({
-          id: `summary-incident-${index}`,
-          incidentType: "Incident",
-          priority: priorityTheme.key,
-          summaryOnly: true,
-        }));
-
   const visibleOfficerDots =
     officers.length > 0
       ? officers.slice(0, 4)
@@ -478,164 +464,75 @@ function CenterMarkers({
           summaryOnly: true,
         }));
 
-  const hiddenIncidentCount = Math.max(
-    incidentCount - visibleIncidentDots.length,
-    0
-  );
+  const hiddenOfficerCount = Math.max(officerCount - visibleOfficerDots.length, 0);
 
-  const hiddenOfficerCount = Math.max(
-    officerCount - visibleOfficerDots.length,
-    0
-  );
-
-  if (
-    visibleIncidentDots.length === 0 &&
-    visibleOfficerDots.length === 0 &&
-    hiddenIncidentCount === 0 &&
-    hiddenOfficerCount === 0
-  ) {
+  if (visibleOfficerDots.length === 0 && hiddenOfficerCount === 0) {
     return null;
   }
 
   const officerColumns = visibleOfficerDots.length <= 1 ? 1 : 2;
-  const hasIncidents = visibleIncidentDots.length > 0 || hiddenIncidentCount > 0;
 
   return (
-    <>
-      {hasIncidents && (
-        <div
+    <div
+      style={{
+        position: "absolute",
+        left: "50%",
+        top: "36%",
+        transform: "translateX(-50%)",
+        zIndex: 4,
+        display: "grid",
+        gridTemplateColumns: `repeat(${officerColumns}, max-content)`,
+        gap: 8,
+        justifyContent: "center",
+        alignItems: "center",
+        maxWidth: "84%",
+      }}
+    >
+      {visibleOfficerDots.map((officer, index) => (
+        <span
+          key={officer.id || officer.badge || index}
+          title={`${officer.name || "Officer"} · ${officer.status || "standby"}`}
           style={{
-            position: "absolute",
-            left: "50%",
-            top: "22%",
-            transform: "translateX(-50%)",
-            zIndex: 4,
-            display: "flex",
-            gap: 6,
-            alignItems: "center",
-            justifyContent: "center",
-            flexWrap: "wrap",
-            maxWidth: "84%",
-          }}
-        >
-          {visibleIncidentDots.map((incident, index) => {
-            const theme = getPriorityTheme(
-              incident.priority ||
-                incident.flag ||
-                incident.severity ||
-                priorityTheme.key
-            );
-
-            return (
-              <button
-                key={incident.id || index}
-                onClick={() => onNav && onNav("incidents")}
-                title={`${getIncidentType(incident)} · ${theme.label}`}
-                style={{
-                  width: 28,
-                  height: 28,
-                  borderRadius: 999,
-                  border: `2px solid ${theme.border}`,
-                  background: theme.background,
-                  color: theme.color,
-                  display: "grid",
-                  placeItems: "center",
-                  cursor: "pointer",
-                  fontSize: 12,
-                  fontWeight: 900,
-                  boxShadow: `0 0 0 5px ${theme.background}`,
-                }}
-              >
-                !
-              </button>
-            );
-          })}
-
-          {hiddenIncidentCount > 0 && (
-            <span
-              style={{
-                height: 28,
-                minWidth: 28,
-                borderRadius: 999,
-                padding: "0 7px",
-                border: `2px solid ${priorityTheme.border}`,
-                background: priorityTheme.background,
-                color: priorityTheme.color,
-                display: "grid",
-                placeItems: "center",
-                fontSize: 11,
-                fontWeight: 900,
-              }}
-            >
-              +{hiddenIncidentCount}
-            </span>
-          )}
-        </div>
-      )}
-
-      {(visibleOfficerDots.length > 0 || hiddenOfficerCount > 0) && (
-        <div
-          style={{
-            position: "absolute",
-            left: "50%",
-            top: hasIncidents ? "44%" : "35%",
-            transform: "translateX(-50%)",
-            zIndex: 4,
+            minWidth: 42,
+            height: 28,
+            borderRadius: 999,
+            padding: "0 9px",
+            background: "rgba(56,189,248,0.16)",
+            border: "2px solid rgba(56,189,248,0.6)",
+            color: "#bae6fd",
             display: "grid",
-            gridTemplateColumns: `repeat(${officerColumns}, max-content)`,
-            gap: 8,
-            justifyContent: "center",
-            alignItems: "center",
-            maxWidth: "84%",
+            placeItems: "center",
+            fontSize: 11,
+            fontWeight: 900,
+            boxShadow: "0 0 0 5px rgba(56,189,248,0.08)",
+            whiteSpace: "nowrap",
           }}
         >
-          {visibleOfficerDots.map((officer, index) => (
-            <span
-              key={officer.id || officer.badge || index}
-              title={`${officer.name || "Officer"} · ${officer.status || "standby"}`}
-              style={{
-                minWidth: 42,
-                height: 28,
-                borderRadius: 999,
-                padding: "0 9px",
-                background: "rgba(56,189,248,0.16)",
-                border: "2px solid rgba(56,189,248,0.6)",
-                color: "#bae6fd",
-                display: "grid",
-                placeItems: "center",
-                fontSize: 11,
-                fontWeight: 900,
-                boxShadow: "0 0 0 5px rgba(56,189,248,0.08)",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {officer.summaryOnly ? "GO" : getOfficerShortLabel(officer, index)}
-            </span>
-          ))}
+          {officer.summaryOnly ? "GO" : getOfficerShortLabel(officer, index)}
+        </span>
+      ))}
 
-          {hiddenOfficerCount > 0 && (
-            <span
-              style={{
-                minWidth: 42,
-                height: 28,
-                borderRadius: 999,
-                padding: "0 9px",
-                background: "rgba(56,189,248,0.16)",
-                border: "2px solid rgba(56,189,248,0.6)",
-                color: "#bae6fd",
-                display: "grid",
-                placeItems: "center",
-                fontSize: 11,
-                fontWeight: 900,
-                whiteSpace: "nowrap",
-              }}
-            >
-              +{hiddenOfficerCount}
-            </span>
-          )}
-        </div>
+      {hiddenOfficerCount > 0 && (
+        <span
+          style={{
+            minWidth: 42,
+            height: 28,
+            borderRadius: 999,
+            padding: "0 9px",
+            background: "rgba(56,189,248,0.16)",
+            border: "2px solid rgba(56,189,248,0.6)",
+            color: "#bae6fd",
+            display: "grid",
+            placeItems: "center",
+            fontSize: 11,
+            fontWeight: 900,
+            whiteSpace: "nowrap",
+          }}
+        >
+          +{hiddenOfficerCount}
+        </span>
       )}
-    </>
+    </div>
   );
 }
 
@@ -829,10 +726,12 @@ function IncidentDispatchCard({
   onNav,
   onDispatch,
 }) {
+  const [isAssigning, setIsAssigning] = useState(false);
   const [selectedOfficerId, setSelectedOfficerId] = useState("");
   const [priority, setPriority] = useState("");
   const [instruction, setInstruction] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [assignedNotice, setAssignedNotice] = useState("");
 
   const nearestOfficers = useMemo(() => {
     return getNearbyOfficersForLocation(
@@ -844,6 +743,9 @@ function IncidentDispatchCard({
   }, [renderableFloors, incident.mapFloorKey, incident.mapLocationKey]);
 
   const theme = getPriorityTheme(incident.mapPriority || "red");
+  const selectedOfficer = nearestOfficers.find(
+    (officer) => officer.id === selectedOfficerId
+  );
 
   const canSend =
     selectedOfficerId &&
@@ -851,6 +753,12 @@ function IncidentDispatchCard({
     instruction.trim() &&
     typeof onDispatch === "function" &&
     !incident.summaryOnly;
+
+  function resetForm() {
+    setSelectedOfficerId("");
+    setPriority("");
+    setInstruction("");
+  }
 
   async function handleSend() {
     if (!canSend) return;
@@ -865,9 +773,11 @@ function IncidentDispatchCard({
         instruction: instruction.trim(),
       });
 
-      setSelectedOfficerId("");
-      setPriority("");
-      setInstruction("");
+      const assignedName = selectedOfficer?.name || "officer";
+      setAssignedNotice(`Assigned ${assignedName}`);
+      resetForm();
+      setIsAssigning(false);
+      setTimeout(() => setAssignedNotice(""), 3500);
     } finally {
       setIsSending(false);
     }
@@ -883,199 +793,254 @@ function IncidentDispatchCard({
         color: C.textPrimary,
       }}
     >
-      <button
-        onClick={() => onNav && onNav("incidents")}
-        style={{
-          width: "100%",
-          textAlign: "left",
-          border: "none",
-          background: "transparent",
-          color: C.textPrimary,
-          cursor: "pointer",
-          padding: 0,
-        }}
-      >
-        <strong style={{ color: theme.color, fontSize: 15 }}>
-          {getIncidentType(incident)}
-        </strong>
-
-        <div style={{ color: C.textSecondary, fontSize: 12, marginTop: 4 }}>
-          Location:{" "}
-          <strong style={{ color: C.textPrimary }}>
-            {incident.mapLocationLabel}
-          </strong>
-          <br />
-          Status: {incident.status || "open"}
-          <br />
-          Time: {formatTime(getIncidentTime(incident))}
-        </div>
-      </button>
-
       <div
         style={{
-          marginTop: 14,
-          paddingTop: 12,
-          borderTop: "1px solid rgba(255,255,255,0.10)",
+          display: "grid",
+          gridTemplateColumns: "minmax(0, 1fr) auto",
+          gap: 12,
+          alignItems: "start",
         }}
       >
-        <div style={{ fontSize: 13, fontWeight: 900, marginBottom: 8 }}>
-          Top 3 Nearest Officers
-        </div>
-
-        {nearestOfficers.length === 0 ? (
-          <div style={{ color: C.textSecondary, fontSize: 12 }}>
-            No nearby officers found.
-          </div>
-        ) : (
-          <div style={{ display: "grid", gap: 8 }}>
-            {nearestOfficers.map((officer, index) => {
-              const isSelected = selectedOfficerId === officer.id;
-
-              return (
-                <button
-                  key={officer.id || index}
-                  onClick={() => setSelectedOfficerId(officer.id)}
-                  style={{
-                    textAlign: "left",
-                    border: `1px solid ${
-                      isSelected ? "#38bdf8" : "rgba(56,189,248,0.35)"
-                    }`,
-                    background: isSelected
-                      ? "rgba(56,189,248,0.18)"
-                      : "rgba(56,189,248,0.08)",
-                    color: C.textPrimary,
-                    borderRadius: 12,
-                    padding: 10,
-                    cursor: "pointer",
-                  }}
-                >
-                  <strong>
-                    {getOfficerShortLabel(officer, index)} ·{" "}
-                    {officer.name || "Ground Officer"}
-                  </strong>
-
-                  {officer.badge && (
-                    <span style={{ color: C.textSecondary }}>
-                      {" "}
-                      · {officer.badge}
-                    </span>
-                  )}
-
-                  <br />
-
-                  <span style={{ color: C.textSecondary, fontSize: 12 }}>
-                    {officer.currentLocationLabel}
-                    {officer.sameFloor ? " · same floor" : " · different floor"}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        )}
-
-        <div style={{ marginTop: 12 }}>
-          <label
-            style={{
-              display: "block",
-              color: C.textSecondary,
-              fontSize: 11,
-              fontWeight: 900,
-              letterSpacing: 0.8,
-              textTransform: "uppercase",
-              marginBottom: 6,
-            }}
-          >
-            Priority
-          </label>
-
-          <select
-            value={priority}
-            onChange={(event) => setPriority(event.target.value)}
-            disabled={!selectedOfficerId}
-            style={{
-              width: "100%",
-              border: `1px solid ${C.border}`,
-              background: "#111318",
-              color: C.textPrimary,
-              borderRadius: 10,
-              padding: "10px 12px",
-              opacity: selectedOfficerId ? 1 : 0.55,
-            }}
-          >
-            <option value="">Select priority</option>
-            <option value="Critical">Critical</option>
-            <option value="High">High</option>
-            <option value="Medium">Medium</option>
-          </select>
-        </div>
-
-        <div style={{ marginTop: 12 }}>
-          <label
-            style={{
-              display: "block",
-              color: C.textSecondary,
-              fontSize: 11,
-              fontWeight: 900,
-              letterSpacing: 0.8,
-              textTransform: "uppercase",
-              marginBottom: 6,
-            }}
-          >
-            Instruction
-          </label>
-
-          <textarea
-            value={instruction}
-            onChange={(event) => setInstruction(event.target.value)}
-            disabled={!priority}
-            placeholder="e.g. Proceed to Server Room and assess the situation..."
-            rows={3}
-            style={{
-              width: "100%",
-              resize: "vertical",
-              border: `1px solid ${C.border}`,
-              background: "#111318",
-              color: C.textPrimary,
-              borderRadius: 10,
-              padding: "10px 12px",
-              opacity: priority ? 1 : 0.55,
-              fontFamily: font,
-            }}
-          />
-        </div>
-
-        {incident.summaryOnly && (
-          <div
-            style={{
-              marginTop: 10,
-              color: "#fde68a",
-              fontSize: 12,
-              lineHeight: 1.4,
-            }}
-          >
-            Dispatch is disabled because this map response only contains incident
-            count, not the incident ID.
-          </div>
-        )}
-
         <button
-          onClick={handleSend}
-          disabled={!canSend || isSending}
+          onClick={() => onNav && onNav("incidents")}
           style={{
-            marginTop: 12,
             width: "100%",
+            textAlign: "left",
             border: "none",
-            borderRadius: 12,
-            padding: "11px 12px",
-            background: canSend ? "#f97316" : "rgba(148,163,184,0.18)",
-            color: canSend ? "#fff7ed" : C.textMuted,
-            fontWeight: 900,
-            cursor: canSend ? "pointer" : "not-allowed",
+            background: "transparent",
+            color: C.textPrimary,
+            cursor: "pointer",
+            padding: 0,
           }}
         >
-          {isSending ? "Sending..." : "Send Instruction"}
+          <strong style={{ color: theme.color, fontSize: 15 }}>
+            {getIncidentType(incident)}
+          </strong>
+
+          <div style={{ color: C.textSecondary, fontSize: 12, marginTop: 4 }}>
+            Location:{" "}
+            <strong style={{ color: C.textPrimary }}>
+              {incident.mapLocationLabel}
+            </strong>
+            <br />
+            Status: {incident.status || "open"}
+            <br />
+            Time: {formatTime(getIncidentTime(incident))}
+          </div>
+        </button>
+
+        <button
+          onClick={() => {
+            setIsAssigning((value) => !value);
+            setAssignedNotice("");
+          }}
+          disabled={incident.summaryOnly}
+          title={incident.summaryOnly ? "Incident ID is required before dispatching" : "Assign officer"}
+          style={{
+            border: `1px solid ${theme.border}`,
+            background: isAssigning ? theme.background : "rgba(255,255,255,0.06)",
+            color: theme.color,
+            borderRadius: 10,
+            padding: "8px 10px",
+            fontSize: 12,
+            fontWeight: 900,
+            cursor: incident.summaryOnly ? "not-allowed" : "pointer",
+            whiteSpace: "nowrap",
+            opacity: incident.summaryOnly ? 0.55 : 1,
+          }}
+        >
+          {isAssigning ? "Cancel" : assignedNotice ? "Assign another" : "Assign"}
         </button>
       </div>
+
+      {assignedNotice && !isAssigning && (
+        <div
+          style={{
+            marginTop: 12,
+            padding: "10px 12px",
+            borderRadius: 12,
+            background: "rgba(34,197,94,0.12)",
+            border: "1px solid rgba(34,197,94,0.28)",
+            color: "#bbf7d0",
+            fontSize: 13,
+            fontWeight: 800,
+          }}
+        >
+          {assignedNotice}
+        </div>
+      )}
+
+      {incident.summaryOnly && (
+        <div
+          style={{
+            marginTop: 12,
+            color: "#fde68a",
+            fontSize: 12,
+            lineHeight: 1.4,
+          }}
+        >
+          Dispatch is disabled because this map response only contains incident
+          count, not the incident ID.
+        </div>
+      )}
+
+      {isAssigning && !incident.summaryOnly && (
+        <div
+          style={{
+            marginTop: 14,
+            paddingTop: 12,
+            borderTop: "1px solid rgba(255,255,255,0.10)",
+          }}
+        >
+          <div style={{ fontSize: 13, fontWeight: 900, marginBottom: 8 }}>
+            Top 3 Nearest Officers
+          </div>
+
+          {nearestOfficers.length === 0 ? (
+            <div style={{ color: C.textSecondary, fontSize: 12 }}>
+              No nearby officers found.
+            </div>
+          ) : (
+            <div style={{ display: "grid", gap: 8 }}>
+              {nearestOfficers.map((officer, index) => {
+                const isSelected = selectedOfficerId === officer.id;
+
+                return (
+                  <button
+                    key={officer.id || index}
+                    onClick={() => setSelectedOfficerId(officer.id)}
+                    style={{
+                      textAlign: "left",
+                      border: `1px solid ${
+                        isSelected ? "#38bdf8" : "rgba(56,189,248,0.35)"
+                      }`,
+                      background: isSelected
+                        ? "rgba(56,189,248,0.18)"
+                        : "rgba(56,189,248,0.08)",
+                      color: C.textPrimary,
+                      borderRadius: 12,
+                      padding: 10,
+                      cursor: "pointer",
+                    }}
+                  >
+                    <strong>
+                      {getOfficerShortLabel(officer, index)} ·{" "}
+                      {officer.name || "Ground Officer"}
+                    </strong>
+
+                    {officer.badge && (
+                      <span style={{ color: C.textSecondary }}>
+                        {" "}
+                        · {officer.badge}
+                      </span>
+                    )}
+
+                    <br />
+
+                    <span style={{ color: C.textSecondary, fontSize: 12 }}>
+                      {officer.currentLocationLabel}
+                      {officer.sameFloor ? " · same floor" : " · different floor"}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          <div style={{ marginTop: 12 }}>
+            <label
+              style={{
+                display: "block",
+                color: C.textSecondary,
+                fontSize: 11,
+                fontWeight: 900,
+                letterSpacing: 0.8,
+                textTransform: "uppercase",
+                marginBottom: 6,
+              }}
+            >
+              Priority
+            </label>
+
+            <select
+              value={priority}
+              onChange={(event) => setPriority(event.target.value)}
+              disabled={!selectedOfficerId}
+              style={{
+                width: "100%",
+                border: `1px solid ${C.border}`,
+                background: "#111318",
+                color: C.textPrimary,
+                borderRadius: 10,
+                padding: "10px 12px",
+                opacity: selectedOfficerId ? 1 : 0.55,
+              }}
+            >
+              <option value="">Select priority</option>
+              <option value="critical">Critical</option>
+              <option value="high">High</option>
+              <option value="medium">Medium</option>
+            </select>
+          </div>
+
+          <div style={{ marginTop: 12 }}>
+            <label
+              style={{
+                display: "block",
+                color: C.textSecondary,
+                fontSize: 11,
+                fontWeight: 900,
+                letterSpacing: 0.8,
+                textTransform: "uppercase",
+                marginBottom: 6,
+              }}
+            >
+              Instruction
+            </label>
+
+            <textarea
+              value={instruction}
+              onChange={(event) => setInstruction(event.target.value)}
+              disabled={!priority}
+              placeholder="e.g. Proceed to Server Room and assess the situation..."
+              rows={3}
+              style={{
+                width: "100%",
+                resize: "vertical",
+                border: `1px solid ${C.border}`,
+                background: "#111318",
+                color: C.textPrimary,
+                borderRadius: 10,
+                padding: "10px 12px",
+                opacity: priority ? 1 : 0.55,
+                fontFamily: font,
+              }}
+            />
+          </div>
+
+          <button
+            onClick={handleSend}
+            disabled={!canSend || isSending}
+            style={{
+              marginTop: 12,
+              width: "100%",
+              border: "none",
+              borderRadius: 12,
+              padding: "11px 12px",
+              background: canSend ? "#f97316" : "rgba(148,163,184,0.18)",
+              color: canSend ? "#fff7ed" : C.textMuted,
+              fontWeight: 900,
+              cursor: canSend ? "pointer" : "not-allowed",
+            }}
+          >
+            {isSending
+              ? "Sending..."
+              : selectedOfficer
+                ? `Assign ${selectedOfficer.name || "officer"}`
+                : "Send Instruction"}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
