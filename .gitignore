@@ -26,8 +26,10 @@ frontend/.env
 !frontend/.env.example
 ground-officer/.env
 ground-officer/.env.*
+!ground-officer/.env.example
 demo-trigger/.env
 demo-trigger/.env.*
+!demo-trigger/.env.example
 
 
 __pycache__/

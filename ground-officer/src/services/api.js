@@ -29,9 +29,4 @@ export const api = {
 
   // Field reports — GO → backend → CC
   createReport: (data) => req("POST", "/reports", data),
-
-  // Reset demo state
-  resetDemoState: () => req("POST", "/demo/reset", null, {
-    "X-Demo-Secret": import.meta.env.VITE_DEMO_RESET_SECRET || "",
-  }),
 };
