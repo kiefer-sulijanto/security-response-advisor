@@ -214,7 +214,7 @@ export function DashboardPage({ onNav, onAnalysisComplete, analyses, incidents, 
                             fontSize: 13, fontWeight: 600, color: C.textPrimary, margin: "0 0 2px",
                             overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
                           }}>
-                            {inc.title || inc.type || "Incident"}
+                            {inc.videoName || inc.incidentType || "Incident"}
                           </p>
                           <p style={{ fontSize: 11, color: C.textMuted, margin: 0 }}>
                             {inc.createdAt ? new Date(inc.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : inc.time || ""}

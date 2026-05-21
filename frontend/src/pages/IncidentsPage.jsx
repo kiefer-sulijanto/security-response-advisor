@@ -386,13 +386,17 @@ export function IncidentsPage({ incidents, groundOfficers = [], analyses = [], o
                       {/* Video */}
                       {(() => {
                         const match = analyses.find(a => a.filename === inc.videoName || a.filename === inc.incidentType);
-                        return match?.videoUrl ? (
-                          <div style={{ marginBottom: 16, borderRadius: 10, overflow: "hidden",
-                            border: `1px solid ${C.border}`, background: "#000" }}>
-                            <video src={match.videoUrl} controls
-                              style={{ width: "100%", maxHeight: 280, display: "block", objectFit: "contain" }} />
-                          </div>
-                        ) : (
+                        if (match?.videoUrl) {
+                          return (
+                            <div style={{ marginBottom: 16, borderRadius: 10, overflow: "hidden",
+                              border: `1px solid ${C.border}`, background: "#000" }}>
+                              <video src={match.videoUrl} controls
+                                style={{ width: "100%", maxHeight: 280, display: "block", objectFit: "contain" }} />
+                            </div>
+                          );
+                        }
+                        if (inc.snapshot_base64) return null;
+                        return (
                           <div style={{ marginBottom: 14, padding: "10px 14px", background: C.surface,
                             borderRadius: 8, fontSize: 12, color: C.textMuted }}>
                             Video not available — only accessible in the session it was analyzed

@@ -210,5 +210,10 @@ def _run_ai_analysis_for_incident(incident_id: str) -> None:
         incident["aiStatus"] = "failed"
         incident["aiError"] = str(e)
         incident["aiUpdatedAt"] = datetime.now().isoformat()
+        incident["explanation"] = (
+            f"AI advisory could not be generated for this incident ({e}). "
+            "The rule-engine baseline classification is in effect — please review manually."
+        )
+        incident["flagReason"] = "AI analysis failed"
 
     _notify_sse("incident_updated")

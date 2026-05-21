@@ -36,7 +36,7 @@ function generateExport(format, { analyses, incidents, dispatches, groundOfficer
           <div class="incident-header">
             <div>
               <span class="incident-id">${inc.id}</span>
-              <span class="incident-source">${inc.videoName || inc.title || "&mdash;"}</span>
+              <span class="incident-source">${inc.videoName || inc.incidentType || "&mdash;"}</span>
             </div>
             <div style="display:flex;gap:10px;align-items:center">
               <span class="badge" style="background:${sevColor}22;color:${sevColor};border:1px solid ${sevColor}44">${(inc.severity || "").toUpperCase()}</span>
@@ -191,7 +191,7 @@ function generateExport(format, { analyses, incidents, dispatches, groundOfficer
         <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #ddd;border-left:4px solid ${sevColor};border-radius:4px;margin-bottom:12px">
           <tr><td style="padding:12px 16px">
             <p style="margin:0 0 4px;font-size:14px">
-              <strong style="color:#F07820">${inc.id}</strong>&nbsp;&nbsp;${inc.videoName || inc.title || "&mdash;"}
+              <strong style="color:#F07820">${inc.id}</strong>&nbsp;&nbsp;${inc.videoName || inc.incidentType || "&mdash;"}
             </p>
             <p style="margin:0 0 8px;font-size:11px;color:#666">
               ${inc.timestamp || "&mdash;"}&nbsp;|&nbsp;${(inc.severity || "").toUpperCase()}&nbsp;|&nbsp;
@@ -285,7 +285,7 @@ function generateExport(format, { analyses, incidents, dispatches, groundOfficer
       return [
         i.id || "-",
         i.timestamp || "-",
-        i.videoName || i.title || "-",
+        i.videoName || i.incidentType || "-",
         i.severity || "-",
         i.status || "-",
         FLAG_LABELS_EXPORT[i.flag] || i.flag || "-",
@@ -341,7 +341,7 @@ function buildSummary({ analyses, incidents, dispatches, groundOfficers, goRepor
       const assignedOfficer = inc.assignedTo ? groundOfficers.find(g => g.id === inc.assignedTo) : null;
       const incDispatches   = dispatches.filter(d => d.incidentId === inc.id);
 
-      lines.push(`[${inc.id}] ${inc.videoName || inc.title || "—"}  |  ${(inc.severity || "").toUpperCase()}  |  ${inc.status || "—"}`);
+      lines.push(`[${inc.id}] ${inc.videoName || inc.incidentType || "—"}  |  ${(inc.severity || "").toUpperCase()}  |  ${inc.status || "—"}`);
       lines.push(`  Time: ${inc.timestamp || "—"}`);
       if (inc.flag) lines.push(`  AI Flag: ${FLAG_LABELS_EXPORT[inc.flag] || inc.flag}${inc.flagReason ? ` — ${inc.flagReason}` : ""}`);
       if (inc.explanation) lines.push(`  Assessment: ${inc.explanation}`);
@@ -369,7 +369,7 @@ function buildSummary({ analyses, incidents, dispatches, groundOfficers, goRepor
 
   if (active.length > 0) {
     lines.push(`CARRY OVER TO NEXT SHIFT`);
-    active.forEach(i => lines.push(`  [${i.id}] ${i.videoName || i.title || "—"}  (${i.severity})`));
+    active.forEach(i => lines.push(`  [${i.id}] ${i.videoName || i.incidentType || "—"}  (${i.severity})`));
     lines.push(``);
   }
 
