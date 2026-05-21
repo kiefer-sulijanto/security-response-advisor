@@ -186,6 +186,11 @@ export function ResultsPage({ analysis, onBack }) {
                 )}
               </div>
               <p style={{ fontSize: 14, color: "#ccc", lineHeight: 1.7, margin: 0 }}>{result.explanation}</p>
+              {result.advisory?.title === "Analysis Unavailable" && (
+                <p style={{ fontSize: 12, color: "#888", marginTop: 10, fontStyle: "italic" }}>
+                  Detailed AI advisory is being generated in the background — check the Incidents page for the full analysis.
+                </p>
+              )}
             </div>
           </div>
         )}

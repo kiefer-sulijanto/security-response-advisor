@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, Fragment } from "react";
 import { C, card, font } from "../constants/colors";
 import { TopBar } from "../components/TopBar";
 import { Badge } from "../components/ui";
+import { getIncidentSourceInfo } from "../services/incidentSource";
 
 const EXPORT_FORMATS = [
   { id: "pdf",  label: "PDF Document",      ext: "pdf"  },
@@ -498,7 +499,7 @@ export function ReportPage({ analyses, incidents, dispatches, groundOfficers, cr
                     const flagLabel = { red: "Critical Threat", yellow: "Caution", green: "All Clear" }[inc.flag] || "Caution";
                     const incDispatches = dispatches.filter(d => d.incidentId === inc.id);
                     const assignedOfficer = inc.assignedTo ? groundOfficers.find(g => g.id === inc.assignedTo) : null;
-                    const srcInfo = getSourceInfo(inc);
+                    const srcInfo = getIncidentSourceInfo(inc);
                     const timeStr = formatIncTime(inc.createdAt || inc.timestamp);
                     const sev = inc.severity || (inc.flag === "red" ? "critical" : inc.flag === "yellow" ? "warning" : "info");
                     return (
@@ -831,13 +832,6 @@ export function ReportPage({ analyses, incidents, dispatches, groundOfficers, cr
   );
 }
 
-function getSourceInfo(inc) {
-  const src = inc.source || "";
-  if (src === "CCTV Frame Pipeline") return { type: "camera", label: "Live Camera"  };
-  if (src === "CCTV Pipeline")       return { type: "camera", label: "Live Camera"  };
-  if (src === "Access Log Pipeline") return { type: "access", label: "Access Log"   };
-  return { type: "other", label: src || "—" };
-}
 
 function formatIncTime(raw) {
   if (!raw) return "—";

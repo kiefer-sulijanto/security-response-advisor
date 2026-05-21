@@ -2,6 +2,7 @@ import { useState } from "react";
 import { C, card, font } from "../constants/colors";
 import { TopBar } from "../components/TopBar";
 import { Badge, StatusDot, EmptyState } from "../components/ui";
+import { getIncidentSourceInfo } from "../services/incidentSource";
 
 const STATUS_LABELS = {
   open:        "Open",
@@ -24,13 +25,6 @@ const FILTER_LABELS = {
 const FLAG_COLORS = { red: "#e24b4a", yellow: "#efaf27", green: "#22c55e" };
 const FLAG_LABELS = { red: "Critical Threat", yellow: "Caution", green: "All Clear" };
 
-function getSourceInfo(inc) {
-  const src = inc.source || "";
-  if (src === "CCTV Frame Pipeline") return { type: "video",  label: "Video Upload" };
-  if (src === "CCTV Pipeline")       return { type: "camera", label: "Live Camera"  };
-  if (src === "Access Log Pipeline") return { type: "access", label: "Access Log"   };
-  return { type: "other", label: src || "—" };
-}
 
 function formatIncTime(raw) {
   if (!raw) return "—";
@@ -185,6 +179,22 @@ export function IncidentsPage({ incidents, groundOfficers = [], analyses = [], o
                      <p style={{ fontSize: 11, color: C.textSecondary, margin: "2px 0 0" }}>
                        {inc.displayLocation || inc.display_location || inc.location || "Unknown location"}
                     </p>
+                    {inc.aiStatus && inc.aiStatus !== "completed" && (
+                      <span style={{
+                        display: "inline-block", fontSize: 10, fontWeight: 700,
+                        padding: "1px 6px", borderRadius: 4, marginTop: 3,
+                        background: inc.aiStatus === "failed"
+                          ? "rgba(226,75,74,0.12)" : "rgba(239,175,39,0.12)",
+                        color: inc.aiStatus === "failed" ? "#e24b4a" : "#efaf27",
+                        border: `1px solid ${inc.aiStatus === "failed"
+                          ? "rgba(226,75,74,0.3)" : "rgba(239,175,39,0.3)"}`,
+                      }}>
+                        {inc.aiStatus === "pending" ? "AI pending"
+                          : inc.aiStatus === "analyzing" ? "AI analyzing"
+                          : inc.aiStatus === "failed" ? "AI failed"
+                          : null}
+                      </span>
+                    )}
                     </div>
 
                     {/* Time */}
@@ -194,7 +204,7 @@ export function IncidentsPage({ incidents, groundOfficers = [], analyses = [], o
 
                     {/* Source */}
                     {(() => {
-                      const src = getSourceInfo(inc);
+                      const src = getIncidentSourceInfo(inc);
                       return (
                         <span style={{ display: "flex", alignItems: "center", gap: 5,
                           fontSize: 12, color: C.textSecondary, overflow: "hidden" }}>
