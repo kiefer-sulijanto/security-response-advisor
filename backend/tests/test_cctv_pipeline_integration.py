@@ -189,7 +189,7 @@ def test_persist_prefers_event_level_snapshot_over_request_snapshot():
         results, "Test Pipeline", snapshot_base64="request_level_snapshot"
     )
 
-    assert count == 1
+    assert count["created_count"] == 1
     assert state.incidents_db[0]["snapshot_base64"] == "selected_from_fight_clip"
 
 
@@ -203,7 +203,7 @@ def test_persist_falls_back_to_request_snapshot_when_event_has_none():
         results, "Test Pipeline", snapshot_base64="request_level_snapshot"
     )
 
-    assert count == 1
+    assert count["created_count"] == 1
     assert state.incidents_db[0]["snapshot_base64"] == "request_level_snapshot"
 
 
@@ -220,7 +220,7 @@ def test_persist_falls_back_to_cached_snapshot_when_both_are_absent():
         results, "Test Pipeline", snapshot_base64=None
     )
 
-    assert count == 1
+    assert count["created_count"] == 1
     assert state.incidents_db[0]["snapshot_base64"] == "cached_camera_snapshot"
 
 
@@ -234,7 +234,7 @@ def test_persist_incident_with_no_snapshot_at_all_stores_none():
         results, "Test Pipeline", snapshot_base64=None
     )
 
-    assert count == 1
+    assert count["created_count"] == 1
     # No event snapshot, no request snapshot, no cached snapshot → None
     assert state.incidents_db[0]["snapshot_base64"] is None
 
@@ -285,7 +285,7 @@ def test_pipeline_fight_snapshot_persisted_from_event_metadata_not_request(fight
         snapshot_base64="request_level_latest_frame",
     )
 
-    assert count == 1
+    assert count["created_count"] == 1
     assert state.incidents_db[0]["snapshot_base64"] == "fight_clip_snapshot"
 
 
