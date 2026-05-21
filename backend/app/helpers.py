@@ -8,6 +8,17 @@ import numpy as np
 
 from app import state
 
+try:
+    from recommendation_AI.incident_analysis import get_advisory as _get_advisory
+except ImportError:
+    _get_advisory = None
+
+try:
+    from routes.events import notify as _notify_sse
+except ImportError:
+    def _notify_sse(_: str) -> None:
+        pass
+
 
 def _cache_latest_cctv_snapshot(camera_id: str | None, location: str | None, snapshot_base64: str | None):
     if not camera_id or not location or not snapshot_base64:
@@ -67,15 +78,19 @@ def _parse_iso_timestamp(value: str | None) -> datetime | None:
         return None
 
 
-def _persist_pipeline_results(results: list[dict], source_name: str, snapshot_base64=None) -> int:
+def _persist_pipeline_results(results: list[dict], source_name: str, snapshot_base64=None) -> dict:
+    """Persist rule-detected incidents immediately with pending AI status.
+
+    Returns {"created_count": int, "created_incident_ids": list[str]}.
+    """
     created_count = 0
+    created_incident_ids: list[str] = []
     duplicate_cooldown_seconds = 30
 
     for result in results:
         if result.get("is_system_error"):
             continue
 
-        advisory = result.get("advisory", {})
         incident_data = result.get("incident_data", {})
 
         incident_name = incident_data.get("name")
@@ -119,7 +134,6 @@ def _persist_pipeline_results(results: list[dict], source_name: str, snapshot_ba
             if age_seconds <= duplicate_cooldown_seconds:
                 is_duplicate = True
                 break
-            # Since we scan newest first, stop once records are clearly older
             if existing_ts < incident_timestamp - timedelta(seconds=duplicate_cooldown_seconds):
                 break
 
@@ -131,13 +145,21 @@ def _persist_pipeline_results(results: list[dict], source_name: str, snapshot_ba
             "incidentType": incident_name,
             "location": incident_location,
             "source": source_name,
+            "camera_id": camera_id,
+            "cameraId": camera_id,
             "description": incident_data.get("description", ""),
-            "flag": _normalize_flag(advisory.get("flag", "green")),
-            "severity": None,
-            "explanation": advisory.get("description", ""),
-            "flagReason": advisory.get("explanation", ""),
-            "actions": advisory.get("actions", []),
-            "aiDetails": advisory,
+            "flag": "yellow",
+            "severity": "warning",
+            "explanation": "Incident detected by rule engine. AI analysis is being generated.",
+            "flagReason": "AI analysis pending",
+            "actions": [
+                "Review the incident immediately",
+                "Check CCTV snapshot and location",
+                "Wait for AI advisory update",
+            ],
+            "aiDetails": None,
+            "aiStatus": "pending",
+            "aiUpdatedAt": None,
             "status": "open",
             "assignedTo": None,
             "createdAt": incident_timestamp.isoformat(),
@@ -146,5 +168,47 @@ def _persist_pipeline_results(results: list[dict], source_name: str, snapshot_ba
 
         state.incidents_db.append(incident)
         created_count += 1
+        created_incident_ids.append(incident["id"])
+        _notify_sse("incident_created")
 
-    return created_count
+    return {"created_count": created_count, "created_incident_ids": created_incident_ids}
+
+
+def _run_ai_analysis_for_incident(incident_id: str) -> None:
+    """Background task: call AI advisory and update the incident in-place."""
+    incident = next((inc for inc in state.incidents_db if inc["id"] == incident_id), None)
+    if not incident:
+        return
+
+    incident["aiStatus"] = "analyzing"
+    _notify_sse("incident_updated")
+
+    if _get_advisory is None:
+        incident["aiStatus"] = "failed"
+        incident["aiError"] = "AI advisory module not available"
+        incident["aiUpdatedAt"] = datetime.now().isoformat()
+        _notify_sse("incident_updated")
+        return
+
+    incident_input = {
+        "incidentType": incident.get("incidentType", ""),
+        "location": incident.get("location", ""),
+        "source": incident.get("source", ""),
+        "description": incident.get("description", ""),
+    }
+
+    try:
+        advisory = _get_advisory(incident_input)
+        incident["flag"] = _normalize_flag(advisory.get("flag", "yellow"))
+        incident["explanation"] = advisory.get("description", "")
+        incident["flagReason"] = advisory.get("explanation", "")
+        incident["actions"] = advisory.get("actions", [])
+        incident["aiDetails"] = advisory
+        incident["aiStatus"] = "completed"
+        incident["aiUpdatedAt"] = datetime.now().isoformat()
+    except Exception as e:
+        incident["aiStatus"] = "failed"
+        incident["aiError"] = str(e)
+        incident["aiUpdatedAt"] = datetime.now().isoformat()
+
+    _notify_sse("incident_updated")

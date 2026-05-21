@@ -22,7 +22,7 @@ incidents_db: list[dict] = []
 dispatches_db: list[dict] = []
 reports_db: list[dict] = []
 
-pipeline = PipelineService(window_seconds=120, enable_advisory=True)
+pipeline = PipelineService(window_seconds=120, enable_advisory=False)
 
 for cam in CAMERA_REGISTRY:
     pipeline.register_camera(
