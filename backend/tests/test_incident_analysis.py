@@ -1,3 +1,4 @@
+from recommendation_AI import incident_analysis
 from recommendation_AI.incident_analysis import get_advisory
 
 
@@ -132,4 +133,23 @@ def test_pipeline_format_unattended_bag_fallback(monkeypatch):
 
     assert result["flag"] == "Yellow"
     assert result["location"] == "main_lobby"
+    assert len(result["actions"]) == 3
+
+
+def test_fallback_when_openai_package_missing(monkeypatch):
+    # Simulate the openai package not being installed even though a key is set:
+    # the system must still produce a valid rule-based advisory.
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test-key")
+    monkeypatch.setattr(incident_analysis, "OpenAI", None)
+
+    result = get_advisory({
+        "incidentType": "physical_altercation",
+        "location": "main_lobby",
+        "source": "CCTV",
+        "description": "CCTV detected possible fighting in the main lobby.",
+    })
+
+    assert result["flag"] == "Red"
+    assert result["location"] == "main_lobby"
+    assert isinstance(result["actions"], list)
     assert len(result["actions"]) == 3

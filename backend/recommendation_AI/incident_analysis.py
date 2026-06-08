@@ -1,7 +1,14 @@
 import json
 import os
 from dotenv import load_dotenv
-from openai import OpenAI
+
+# OpenAI is an optional dependency. The system falls back to rule-based
+# advisories when the package is missing, so importing it must never break
+# module import (e.g. during pytest collection without openai installed).
+try:
+    from openai import OpenAI
+except ImportError:  # pragma: no cover - exercised only when openai is absent
+    OpenAI = None
 
 from .advisory_prompt import SYSTEM_PROMPT
 from .advisory_rules import (
@@ -116,8 +123,9 @@ def certis_incident_analysis(input_data):
 
     # --- Post-validation failures: delegate to _rule_based_advisory ---
 
+    # No openai package installed or no API key: use the SOP rule-based advisory.
     api_key = os.getenv("OPENAI_API_KEY")
-    if not api_key:
+    if OpenAI is None or not api_key:
         return _rule_based_advisory(input_data)
 
     try:

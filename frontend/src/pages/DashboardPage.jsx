@@ -6,6 +6,7 @@ import { CameraFeed } from "../components/CameraFeed";
 import { StatCard, EmptyState, Badge, StatusDot } from "../components/ui";
 import { api } from "../services/api";
 import { UploadPanel } from "./UploadPage";
+import { getIncidentSourceInfo } from "../services/incidentSource";
 
 const GO_STATUS_META = {
   responding: { color: "#e24b4a", label: "Assigned"   },
@@ -49,10 +50,12 @@ function CardHeader({ title, action, onAction }) {
 }
 
 export function DashboardPage({ onNav, onAnalysisComplete, analyses, incidents, groundOfficers = [], dispatches = [] }) {
-  const criticalCount  = analyses.filter(a => a.result?.flag === "red").length;
-  const warningCount   = analyses.filter(a => a.result?.flag === "yellow").length;
-  const threatCount    = criticalCount + warningCount;
+  // Threat counts reflect live backend incidents (camera / demo trigger / pipeline),
+  // not local upload-analysis history, so the dashboard matches real operations.
   const activeIncidents = incidents.filter(i => i.status !== "resolved");
+  const criticalCount  = activeIncidents.filter(i => i.severity === "critical" || i.flag === "red").length;
+  const warningCount   = activeIncidents.filter(i => i.severity === "warning"  || i.flag === "yellow").length;
+  const threatCount    = criticalCount + warningCount;
   const activeOfficers = groundOfficers.filter(g => g.online);
 
   const [resetLoading, setResetLoading] = useState(false);
@@ -188,16 +191,22 @@ export function DashboardPage({ onNav, onAnalysisComplete, analyses, incidents, 
             <div style={card({ padding: 0, overflow: "hidden", display: "flex", flexDirection: "column" })}>
               <CardHeader
                 title="Active Incidents"
-                action={incidents.length ? "View all →" : undefined}
+                action={activeIncidents.length ? "View all →" : undefined}
                 onAction={() => onNav("incidents")}
               />
-              {incidents.length === 0 ? (
+              {activeIncidents.length === 0 ? (
                 <EmptyState title="No active incidents" />
               ) : (
                 <div style={{ overflowY: "auto", flex: 1 }}>
-                  {incidents.slice().reverse().slice(0, 8).map((inc, i, arr) => {
+                  {activeIncidents.slice().reverse().slice(0, 8).map((inc, i, arr) => {
                     const sev = inc.severity === "critical" ? "critical"
                               : inc.severity === "warning"  ? "warning" : "info";
+                    // Normalized source label (camera / upload / access), consistent
+                    // with the Incidents page and report exports.
+                    const sourceLabel = getIncidentSourceInfo(inc).label;
+                    const timeLabel = inc.createdAt
+                      ? new Date(inc.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                      : inc.time || "";
                     return (
                       <div key={inc.id} style={{
                         display: "flex", alignItems: "center", gap: 12, padding: "12px 18px",
@@ -214,10 +223,13 @@ export function DashboardPage({ onNav, onAnalysisComplete, analyses, incidents, 
                             fontSize: 13, fontWeight: 600, color: C.textPrimary, margin: "0 0 2px",
                             overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
                           }}>
-                            {inc.videoName || inc.incidentType || "Incident"}
+                            {inc.incidentType || inc.videoName || "Incident"}
                           </p>
-                          <p style={{ fontSize: 11, color: C.textMuted, margin: 0 }}>
-                            {inc.createdAt ? new Date(inc.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : inc.time || ""}
+                          <p style={{
+                            fontSize: 11, color: C.textMuted, margin: 0,
+                            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                          }}>
+                            {sourceLabel}{timeLabel ? ` · ${timeLabel}` : ""}
                           </p>
                         </div>
                         <Badge sev={sev} />

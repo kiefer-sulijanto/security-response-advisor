@@ -67,7 +67,12 @@ export function IncidentsPage({ incidents, groundOfficers = [], analyses = [], o
   const filtered = filter === "all" ? incidents
     : incidents.filter(i => getSeverity(i) === filter || i.status === filter);
 
-  const availableOfficers = groundOfficers.filter(g => g.status !== "off_duty");
+  const availableOfficers = groundOfficers.filter(g =>
+    g.online &&
+    g.status === "patrolling" &&
+    !g.assignedIncidentId &&
+    !g.assigned_incident_id
+  );
 
   const handleSendDispatch = (inc) => {
     if (!selOfficer || !instrText.trim()) return;
