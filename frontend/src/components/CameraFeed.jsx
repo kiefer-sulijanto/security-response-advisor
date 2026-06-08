@@ -68,11 +68,13 @@ export function CameraFeed({ cam }) {
 
           imageRef.current.src = cam.streamUrl;
         } else if (cam.source === "placeholder") {
-        if (!cam.videoUrl) {
-          setCamStatus("no-url");
-          return;
-        }
+          if (!cam.videoUrl) {
+            setCamStatus("no-url");
+            return;
+          }
+
           setCamStatus("live");
+          startProcessing("video");
         } else if (cam.source === "rtsp") {
           setCamStatus("error");
           setErrorMsg("RTSP is not directly supported in browser");
@@ -170,7 +172,7 @@ export function CameraFeed({ cam }) {
         stream.getTracks().forEach((t) => t.stop());
       }
 
-      if (videoEl) {
+      if (videoEl && cam.source === "device") {
         videoEl.srcObject = null;
         videoEl.src = "";
       }
@@ -241,6 +243,7 @@ export function CameraFeed({ cam }) {
           />
         ) : cam.source === "placeholder" && cam.videoUrl ? (
           <video
+            ref={videoRef}
             src={cam.videoUrl}
             autoPlay
             muted

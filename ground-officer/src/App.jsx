@@ -83,6 +83,9 @@ export default function App() {
 
   useEffect(() => {
     if (!officer) return
+    // Fetch immediately on login, then poll. syncAlerts is async, so setState
+    // runs after the await (not synchronously) — safe despite the lint rule.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     syncAlerts()
     const id = setInterval(syncAlerts, 8_000)
     return () => clearInterval(id)

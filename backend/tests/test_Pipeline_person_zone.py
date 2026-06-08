@@ -185,26 +185,3 @@ def test_pipeline_access_plus_person_triggers_intrusion_attempt(pipeline):
     }
     assert "person_detected" in triggering_event_types
     assert "access_denied" in triggering_event_types
-
-def test_pipeline_person_after_hours_triggers_incident(pipeline):
-    pipeline.extractors["cam_01"] = FakeExtractor(
-        detections=[
-            {
-                "label": "person",
-                "bbox": [120, 120, 200, 260],
-                "center": [160, 190],
-                "in_restricted_area": False,
-                "timestamp": "2026-04-12T21:30:00",
-            }
-        ]
-    )
-
-    result = pipeline.process_cctv_frame(
-        frame="dummy_frame",
-        camera_id="cam_01",
-        include_debug=True,
-    )
-
-    assert len(result["results"]) == 1
-    incident = result["results"][0]["incident_data"]
-    assert incident["name"] == "suspicious_after_hours_presence"

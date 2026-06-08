@@ -8,7 +8,8 @@ const NAV = [
 export default function BottomNav({ current, onNavigate, unreadAlerts }) {
   return (
     <nav style={styles.nav}>
-      {NAV.map(({ id, label, icon: Icon }) => {
+      {NAV.map((item) => {
+        const { id, label, icon: Icon } = item
         const active = current === id
         return (
           <button key={id} style={styles.btn} onClick={() => onNavigate(id)}>
