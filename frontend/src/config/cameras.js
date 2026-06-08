@@ -52,7 +52,7 @@ function buildCamera({
 export const CAMERA_CONFIG = [
   buildCamera({
     id: "cam_01",
-    name: "Server Room Camera",
+    name: "Entrance Camera",
     location: "server_room",
     defaultSource: "stream",
     defaultProcessingEnabled: true,
@@ -62,21 +62,22 @@ export const CAMERA_CONFIG = [
     id: "cam_02",
     name: "Lobby Camera",
     location: "lobby",
-    defaultSource: "stream",
+    defaultSource: "placeholder",
+    defaultVideoUrl: "/videos/fighting.mp4",
     defaultProcessingEnabled: true,
   }),
 
-  buildCamera({
+  /*buildCamera({
     id: "cam_03",
     name: "Gathering Area Camera",
     location: "gathering_area",
     defaultSource: "stream",
     defaultProcessingEnabled: true,
-  }),
+  }),*/
 
   buildCamera({
     id: "cam_04",
-    name: "Parking Area Preview",
+    name: "Main hall Camera",
     location: "parking_area",
     defaultSource: "placeholder",
     defaultVideoUrl: "/videos/normal_001.mp4",
@@ -85,7 +86,7 @@ export const CAMERA_CONFIG = [
 
   buildCamera({
     id: "cam_05",
-    name: "Multi-purpose Room Preview",
+    name: "Street Preview",
     location: "multi_purpose_room",
     defaultSource: "placeholder",
     defaultVideoUrl: "/videos/normal_002.mp4",
@@ -94,7 +95,7 @@ export const CAMERA_CONFIG = [
 
   buildCamera({
     id: "cam_06",
-    name: "Store Room Preview",
+    name: "Main Entrance View",
     location: "store_room",
     defaultSource: "placeholder",
     defaultVideoUrl: "/videos/normal_004.mp4",
