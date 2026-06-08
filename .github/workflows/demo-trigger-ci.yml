@@ -1,0 +1,33 @@
+name: Demo Trigger CI
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - "demo-trigger/**"
+      - ".github/workflows/demo-trigger-ci.yml"
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - "demo-trigger/**"
+      - ".github/workflows/demo-trigger-ci.yml"
+
+jobs:
+  demo-trigger:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: demo-trigger
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: demo-trigger/package-lock.json
+
+      - run: npm ci
+      - run: npm run lint --if-present
+      - run: npm test --if-present -- --run
+      - run: npm run build
